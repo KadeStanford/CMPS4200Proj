@@ -12,15 +12,18 @@ python --version
 ```
 To check your version then run.
 
+
 ```
 pip install Flask
 ```
 To install Flask to make the frontend and backend work together.
 
+
 ```
 python app.py
 ```
 To run and test out your program.
+
 
 ```
 http://127.0.0.1:5000/
