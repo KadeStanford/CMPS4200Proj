@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image Uploader</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"/>
-    <link rel="stylesheet" href="/static/style.css"> <!-- Assuming style.css is in the static folder of your Flask project -->
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <div class="wrapper">
@@ -18,10 +17,10 @@
 
         <!-- Form for file upload -->
         <form action="/upload" method="POST" enctype="multipart/form-data">
-            <!-- Separate area for file input trigger -->
+            <!-- Separates area for file input trigger -->
             <div class="file-upload-area">
                 <input class="file-input" type="file" name="file" accept=".png, .jpeg, .jpg, .svg" hidden>
-                <i class="fas fa-cloud-upload-alt"></i>
+                <img src="/static/cloud.svg" alt="Upload Icon" class="upload-icon">
                 <p>Browse Image to Upload</p>
             </div>
             <div class="file-status-message"></div>
@@ -40,7 +39,7 @@
             const fileName = this.files[0]?.name || '';
             if (fileName) {
                 document.querySelector('.file-status-message').textContent = 'File successfully selected: ' + fileName;
-                document.querySelector('.upload-button').disabled = false; // Enable the upload button
+                document.querySelector('.upload-button').disabled = false; //Enables the upload button
             }
         });
     </script>
