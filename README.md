@@ -3,7 +3,7 @@ Code for the 420 project that involves a LLM and whatever else the project requi
 Everything is found here!
 
 
-To run the program you must have Python installed go Here: https://www.python.org/downloads/ to download!
+To run the program you must have Python installed go Here: https://www.python.org/downloads/ to download and when you intall make sure to add PYTHON to PATH when installing!!
 You may need to also install the correct packages for Python that Visual Studio Code recommends if prompted!
 Once Python is installed run 
 
