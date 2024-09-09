@@ -4,6 +4,7 @@ Everything is found here!
 
 
 To run the program you must have Python installed go Here: https://www.python.org/downloads/ to download!
+You may need to also install the correct packages for Python that Visual Studio Code recommends if prompted!
 Once Python is installed run 
 
 ```
