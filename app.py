@@ -3,9 +3,7 @@ import os
 import shutil
 import atexit
 from werkzeug.utils import secure_filename
-from datetime import datetime
 from PIL import Image
-import torch
 from transformers import YolosImageProcessor, YolosForObjectDetection
 
 app = Flask(__name__)
