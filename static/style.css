@@ -74,7 +74,26 @@ form button {
 }
 
 form button:hover {
-  background-color: #1a5632;
+  background-color: #145526;
+}
+
+.uploaded-image {
+  margin: 20px 0;
+  text-align: center;
+}
+
+.uploaded-image img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 5px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.detected-info {
+  margin-top: 15px;
+  font-size: 16px;
+  color: #1a5632;
+  font-weight: 500;
 }
 
 section .row {

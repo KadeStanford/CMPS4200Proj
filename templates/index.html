@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image Uploader</title>
     <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
 </head>
 <body>
     <div class="wrapper">
@@ -26,6 +27,17 @@
             <div class="file-status-message"></div>
             <button type="submit" class="upload-button" disabled>Upload Image</button>
         </form>
+
+        <!-- Shows the image uploaded and data from YOLOS -->
+        {% if image_path %}
+        <div class="uploaded-image">
+            <!-- Use the correct path to the image -->
+            <img src="{{ url_for('uploaded_file', filename=image_path) }}" alt="Uploaded Image">
+        </div>
+        <div class="detected-info">
+            <p>Number of objects detected: {{ num_detected_objects }}</p>
+        </div>
+        {% endif %}
     </div>
 
     <script>
