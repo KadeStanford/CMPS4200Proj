@@ -4,7 +4,7 @@ import shutil
 import atexit
 from werkzeug.utils import secure_filename
 from PIL import Image
-from transformers import YolosImageProcessor, YolosForObjectDetection
+from transformers import VisionEncoderDecoderModel, TrOCRProcessor
 
 app = Flask(__name__)
 
@@ -50,7 +50,7 @@ def upload_file():
         file.save(file_path)
 
         #Redirect to the detect route
-        return redirect(url_for('detect_objects'))
+        return redirect(url_for('detect_text'))
 
     return redirect(url_for('index', message='Invalid file type'))
 
@@ -59,59 +59,29 @@ def upload_file():
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
+# Route for performing OCR on the most recent image
 @app.route('/detect', methods=['GET'])
-def detect_objects():
+def detect_text():
     # Get the most recent file
     recent_file = get_most_recent_file()
 
     # Load the image using PIL
     image = Image.open(recent_file).convert('RGB')
-    image = image.resize((640, 640)) 
-    print(f"Image mode: {image.mode}")
-    print(f"Image size: {image.size}")
 
-    # Initialize YOLOs model and feature extractor
-    feature_extractor = YolosImageProcessor.from_pretrained('hustvl/yolos-small')
-    
-    # Configure image processor options
-    processor_options = {
-        "do_resize": True,
-        "size": {"shortest_edge": 800, "longest_edge": 1333},
-        "resample": Image.BILINEAR,
-        "do_rescale": True,
-        "rescale_factor": 1/255,
-        "do_normalize": True,
-        "image_mean": [0.485, 0.456, 0.406],  # Example mean values (ImageNet defaults)
-        "image_std": [0.229, 0.224, 0.225],   # Example std values (ImageNet defaults)
-        "do_pad": True,
-        "pad_size": {"height": 800, "width": 800}  # Adjust as needed
-    }
+    # Initialize the OCR model and processor
+    model = VisionEncoderDecoderModel.from_pretrained("microsoft/trocr-base-printed")
+    processor = TrOCRProcessor.from_pretrained("microsoft/trocr-base-printed")
 
-    # Prepare the image for the model
-    try:
-        inputs = YolosImageProcessor(images=image, return_tensors="pt", **processor_options)
-    except Exception as e:
-        return f"Error processing image: {e}"
-    model = YolosForObjectDetection.from_pretrained('hustvl/yolos-small')
-
-    # Prepare the image for the model
-    inputs = feature_extractor(images=image, return_tensors="pt")
-
-    # Perform object detection
-    outputs = model(**inputs)
-
-    # Get the logits and bounding boxes
-    logits = outputs.logits
-    bboxes = outputs.pred_boxes
+    # Process the image and generate text
+    pixel_values = processor(images=image, return_tensors="pt").pixel_values
+    generated_ids = model.generate(pixel_values)
+    generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
 
     # Convert the recent file path to a filename
     filename = os.path.basename(recent_file)
 
-    # Process the results (e.g., number of detected objects)
-    num_detected_objects = logits.shape[1]
-
-    # Render the template with the image and detection information
-    return render_template('index.html', image_path=filename, num_detected_objects=num_detected_objects)
+    # Show image and text
+    return render_template('index.html', image_path=filename, extracted_text=generated_text)
 
 #Function to clean up the uploads folder
 def cleanup_upload_folder():
@@ -119,7 +89,7 @@ def cleanup_upload_folder():
         shutil.rmtree(UPLOAD_FOLDER)
         os.makedirs(UPLOAD_FOLDER)  #Recreate the folder for future use
 
-#Registers the cleanup function to be called on exit
+#Register the cleanup function to be called on exit
 atexit.register(cleanup_upload_folder)
 
 if __name__ == '__main__':
