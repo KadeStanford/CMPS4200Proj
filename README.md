@@ -5,7 +5,13 @@ Everything is found here!
 
 To run the program you must have Python installed go Here: https://www.python.org/downloads/ to download and when you intall make sure to add Python to PATH when installing!!
 You may need to also install the correct packages for Python that Visual Studio Code recommends if prompted!
-Once Python is installed run 
+Once Python is installed run the next few commands.
+
+This installs a few packages needed for YOLOS and image handling.
+```
+pip install Pillow
+pip install transformers
+```
 
 ```
 python --version
