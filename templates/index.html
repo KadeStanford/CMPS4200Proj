@@ -28,14 +28,16 @@
             <button type="submit" class="upload-button" disabled>Upload Image</button>
         </form>
 
-        <!-- Shows the image uploaded and data from YOLOS -->
         {% if image_path %}
         <div class="uploaded-image">
-            <!-- Use the correct path to the image -->
             <img src="{{ url_for('uploaded_file', filename=image_path) }}" alt="Uploaded Image">
         </div>
         <div class="detected-info">
-            <p>Number of objects detected: {{ num_detected_objects }}</p>
+            <!-- Display image -->
+            {% if extracted_text %}
+                <h2>Extracted Text:</h2>
+                <p>{{ extracted_text }}</p>
+            {% endif %}
         </div>
         {% endif %}
     </div>
