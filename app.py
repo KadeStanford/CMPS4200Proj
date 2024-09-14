@@ -3,7 +3,6 @@ import os
 import shutil
 import atexit
 from werkzeug.utils import secure_filename
-from datetime import datetime
 from PIL import Image
 from transformers import VisionEncoderDecoderModel, TrOCRProcessor
 
