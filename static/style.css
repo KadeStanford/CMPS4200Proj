@@ -175,3 +175,17 @@ section .details span {
 .uploaded-area i.fa-check {
   font-size: 16px;
 }
+.card-image-container {
+  max-width: 300px;
+  background-color: white;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); 
+  text-align: center;
+}
+
+.card-image {
+  max-width: 100%;
+  height: auto;
+}
+
