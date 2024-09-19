@@ -5,6 +5,7 @@ import atexit
 from werkzeug.utils import secure_filename
 from PIL import Image
 from transformers import VisionEncoderDecoderModel, TrOCRProcessor
+import requests
 
 app = Flask(__name__)
 
@@ -82,6 +83,32 @@ def detect_text():
 
     # Show image and text
     return render_template('index.html', image_path=filename, extracted_text=generated_text)
+
+# Route for searching
+@app.route('/search', methods=['POST'])
+def search_card():
+    card_name = request.form.get('card_name')
+
+    #Scryfall API
+    scryfall_url = f"https://api.scryfall.com/cards/named?fuzzy={card_name}"
+
+    # Make the API request
+    response = requests.get(scryfall_url)
+    
+    # is card found
+    if response.status_code == 200:
+        card_data = response.json()
+        # Extract the relevant card details
+        card_info = {
+            'name': card_data.get('name'),
+            'type_line': card_data.get('type_line'),
+            'mana_cost': card_data.get('mana_cost', 'N/A'),
+            'oracle_text': card_data.get('oracle_text', 'N/A'),
+            'image_url': card_data['image_uris'].get('normal') if 'image_uris' in card_data else None
+        }
+        return render_template('index.html', card_info=card_info)
+    else:
+        return render_template('index.html', message="Card not found!")
 
 #Function to clean up the uploads folder
 def cleanup_upload_folder():
