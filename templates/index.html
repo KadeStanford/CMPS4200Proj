@@ -1,89 +1,263 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Uploader & Card Search</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <title>MTG Card Scanner</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <link
+      rel="icon"
+      href="{{ url_for('static', filename='favicon.ico') }}"
+      type="image/x-icon"
+    />
+  </head>
+  <body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+      <div class="navbar-container">
+        <a href="/" class="logo">MTG Card Scanner</a>
+        <!-- Card Search Form in Navbar -->
+        <form
+          action="{{ url_for('search_card') }}"
+          method="POST"
+          class="search-form"
+        >
+          <input
+            type="text"
+            name="card_name"
+            id="card-search-input"
+            placeholder="Search for a card..."
+            autocomplete="off"
+            required
+          />
+          <button type="submit">Search</button>
+          <!-- Autocomplete Suggestions -->
+          <ul id="autocomplete-list" class="autocomplete-items"></ul>
+        </form>
+      </div>
+    </nav>
+
     <div class="wrapper">
-        <header>Image Uploader & Card Search</header>
-        
-        <!-- Display the message if available (success or error) -->
-        {% if request.args.get('message') %}
-        <p>{{ request.args.get('message') }}</p>
-        {% endif %}
+      <!-- Display the message if available (success or error) -->
+      {% if message %}
+      <p class="message">{{ message }}</p>
+      {% endif %}
 
-        <!-- Form for file upload -->
-        <form action="/upload" method="POST" enctype="multipart/form-data">
-            <div class="file-upload-area">
-                <input class="file-input" type="file" name="file" accept=".png, .jpeg, .jpg, .svg" hidden>
-                <img src="/static/cloud.svg" alt="Upload Icon" class="upload-icon">
-                <p>Browse Image to Upload</p>
-            </div>
-            <div class="file-status-message"></div>
-            <button type="submit" class="upload-button" disabled>Upload Image</button>
-        </form>
-
-        <!-- Display uploaded image and extracted text -->
-        {% if image_path %}
-        <div class="uploaded-image">
-            <img src="{{ url_for('uploaded_file', filename=image_path) }}" alt="Uploaded Image">
+      <!-- Conditional Display: Show upload form only if no image is uploaded -->
+      {% if not image_path %}
+      <!-- Form for file upload -->
+      <form
+        action="/upload"
+        method="POST"
+        enctype="multipart/form-data"
+        class="upload-form"
+      >
+        <div class="file-upload-area">
+          <input
+            class="file-input"
+            type="file"
+            name="file"
+            accept=".png, .jpeg, .jpg, .svg"
+            hidden
+          />
+          <img src="/static/cloud.svg" alt="Upload Icon" class="upload-icon" />
+          <p>Browse Image to Upload</p>
         </div>
-        <div class="detected-info">
-            {% if extracted_text %}
-                <h2>Extracted Text:</h2>
-                <p>{{ extracted_text }}</p>
-            {% endif %}
-        </div>
-        {% endif %}
-
-        <!-- Card Search Form -->
-        <h2>Magic: The Gathering Card Search</h2>
-        <form action="{{ url_for('search_card') }}" method="POST">
-            <input type="text" name="card_name" placeholder="Enter card name" required>
-            <button type="submit">Search</button>
+        <div class="file-status-message"></div>
+        <button type="submit" class="upload-button" disabled>
+          Upload Image
+        </button>
+      </form>
+      {% else %}
+      <!-- Display 'Upload Again' button -->
+      <div class="upload-again-container">
+        <form action="/" method="GET">
+          <button type="submit" class="upload-again-button">
+            Upload Again
+          </button>
         </form>
+      </div>
+      {% endif %}
 
-        <!-- Display card search result -->
-        {% if card_info %}
+      <!-- Display uploaded image and card information side by side -->
+      {% if image_path and card_info %}
+      <div class="content-container">
+        <!-- Uploaded Image -->
+        <div class="card-image-container">
+          <img
+            src="{{ url_for('uploaded_file', filename=image_path) }}"
+            alt="Uploaded Image"
+            class="card-image"
+          />
+        </div>
+
+        <!-- Card Information -->
         <div class="card-info">
-            <h2>Card Details:</h2>
-            <p><strong>Name:</strong> {{ card_info.name }}</p>
-            <p><strong>Type:</strong> {{ card_info.type_line }}</p>
-            <p><strong>Mana Cost:</strong> 
-                {% if mana_symbols %}
-                    {% for symbol in mana_symbols %}
-                        <img src="{{ symbol }}" alt="Mana Symbol" style="height: 24px;">
-                    {% endfor %}
-                {% else %}
-                    No Mana
-                {% endif %}
-            </p>
-            <p><strong>Description:</strong> {{ card_info.oracle_text }}</p>
-            <p><strong>Price (USD):</strong> {{ card_info.usd_price }}</p>
-            <div class="card-image-container">
-                <img src="{{ card_info.image_url }}" alt="Card Image" class="card-image">
-            </div>
+          <h2>{{ card_info.name }}</h2>
+          <p><strong>Type:</strong> {{ card_info.type_line }}</p>
+          <p><strong>Mana Cost:</strong> {{ card_info.mana_cost }}</p>
+          <p><strong>Description:</strong> {{ card_info.oracle_text }}</p>
+          {% if card_info.usd_price %}
+          <p><strong>Price (USD):</strong> ${{ card_info.usd_price }}</p>
+          {% endif %} {% if card_info.image_url %}
+          <!-- Scryfall Card Image -->
+          <div class="scryfall-image-container">
+            <img
+              src="{{ card_info.image_url }}"
+              alt="{{ card_info.name }}"
+              class="scryfall-image"
+            />
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% elif extracted_text %}
+      <!-- Display extracted text if card is not found -->
+      <div class="detected-info">
+        <h2>Extracted Text:</h2>
+        <p>{{ extracted_text }}</p>
+      </div>
+      {% endif %}
+
+      <!-- Display card search result from manual search -->
+      {% if card_info_manual %}
+      <div class="content-container">
+        <!-- Card Image -->
+        {% if card_info_manual.image_url %}
+        <div class="card-image-container">
+          <img
+            src="{{ card_info_manual.image_url }}"
+            alt="{{ card_info_manual.name }}"
+            class="card-image"
+          />
         </div>
         {% endif %}
+
+        <!-- Card Information -->
+        <div class="card-info">
+          <h2>{{ card_info_manual.name }}</h2>
+          <p><strong>Type:</strong> {{ card_info_manual.type_line }}</p>
+          <p><strong>Mana Cost:</strong> {{ card_info_manual.mana_cost }}</p>
+          <p>
+            <strong>Description:</strong> {{ card_info_manual.oracle_text }}
+          </p>
+          {% if card_info_manual.usd_price %}
+          <p><strong>Price (USD):</strong> ${{ card_info_manual.usd_price }}</p>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
     </div>
     <script>
-        //Triggers file input when the file-upload-area is clicked
-        document.querySelector('.file-upload-area').addEventListener('click', function() {
-            document.querySelector('.file-input').click();
+      // Triggers file input when the file-upload-area is clicked
+      const fileUploadArea = document.querySelector(".file-upload-area");
+      if (fileUploadArea) {
+        fileUploadArea.addEventListener("click", function () {
+          document.querySelector(".file-input").click();
         });
+      }
 
-        //Enables the "Upload Image" button only after a file has been selected
-        document.querySelector('.file-input').addEventListener('change', function() {
-            const fileName = this.files[0]?.name || '';
-            if (fileName) {
-                document.querySelector('.file-status-message').textContent = 'File successfully selected: ' + fileName;
-                document.querySelector('.upload-button').disabled = false; //Enables the upload button
-            }
+      // Enables the "Upload Image" button only after a file has been selected
+      const fileInput = document.querySelector(".file-input");
+      if (fileInput) {
+        fileInput.addEventListener("change", function () {
+          const fileName = this.files[0]?.name || "";
+          if (fileName) {
+            document.querySelector(".file-status-message").textContent =
+              "File selected: " + fileName;
+            document.querySelector(".upload-button").disabled = false; // Enables the upload button
+          }
         });
+      }
+
+      // Autocomplete functionality
+      const searchInput = document.getElementById("card-search-input");
+      const autocompleteList = document.getElementById("autocomplete-list");
+
+      let currentFocus = -1;
+
+      searchInput.addEventListener("input", function () {
+        const query = this.value;
+
+        // Close any already open lists
+        closeAllLists();
+
+        if (!query) {
+          return false;
+        }
+
+        fetch(`/autocomplete?term=${encodeURIComponent(query)}`)
+          .then((response) => response.json())
+          .then((suggestions) => {
+            if (suggestions.length === 0) {
+              return false;
+            }
+
+            suggestions.forEach((item, index) => {
+              const suggestionItem = document.createElement("li");
+              suggestionItem.innerHTML = `<strong>${item.substr(
+                0,
+                query.length
+              )}</strong>${item.substr(query.length)}`;
+              suggestionItem.addEventListener("click", function () {
+                searchInput.value = item;
+                closeAllLists();
+              });
+              autocompleteList.appendChild(suggestionItem);
+            });
+          })
+          .catch((error) => {
+            console.error("Error fetching autocomplete suggestions:", error);
+          });
+      });
+
+      searchInput.addEventListener("keydown", function (e) {
+        const items = autocompleteList.getElementsByTagName("li");
+        if (e.keyCode == 40) {
+          // Arrow DOWN
+          currentFocus++;
+          addActive(items);
+        } else if (e.keyCode == 38) {
+          // Arrow UP
+          currentFocus--;
+          addActive(items);
+        } else if (e.keyCode == 13) {
+          // ENTER
+          e.preventDefault();
+          if (currentFocus > -1) {
+            if (items) items[currentFocus].click();
+          }
+        }
+      });
+
+      function addActive(items) {
+        if (!items) return false;
+        removeActive(items);
+        if (currentFocus >= items.length) currentFocus = 0;
+        if (currentFocus < 0) currentFocus = items.length - 1;
+        items[currentFocus].classList.add("autocomplete-active");
+      }
+
+      function removeActive(items) {
+        for (let i = 0; i < items.length; i++) {
+          items[i].classList.remove("autocomplete-active");
+        }
+      }
+
+      function closeAllLists(elmnt) {
+        while (autocompleteList.firstChild) {
+          autocompleteList.removeChild(autocompleteList.firstChild);
+        }
+        currentFocus = -1;
+      }
+
+      document.addEventListener("click", function (e) {
+        if (
+          e.target != searchInput &&
+          e.target.parentNode != autocompleteList
+        ) {
+          closeAllLists();
+        }
+      });
     </script>
-</body>
+  </body>
 </html>
