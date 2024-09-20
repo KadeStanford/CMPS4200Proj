@@ -1,24 +1,26 @@
+# app.py
+
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory
 import os
 import shutil
 import atexit
 from werkzeug.utils import secure_filename
 from PIL import Image
-from transformers import VisionEncoderDecoderModel, TrOCRProcessor
 import requests
+import card_detector
 
 app = Flask(__name__)
 
-#Defines the upload folder and allowed extensions
+# Defines the upload folder and allowed extensions
 UPLOAD_FOLDER = './uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {'png', 'jpeg', 'jpg', 'svg'}
 
-#Creates the uploads folder if it doesn't exist
+# Creates the uploads folder if it doesn't exist
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-#Function to check allowed file extensions
+# Function to check allowed file extensions
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -28,12 +30,12 @@ def get_most_recent_file():
     most_recent_file = max(files_in_folder, key=os.path.getmtime)
     return most_recent_file
 
-#Route for the home page
+# Route for the home page
 @app.route('/')
 def index():
     return render_template('index.html')
 
-#Route for uploading the image
+# Route for uploading the image
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
@@ -50,7 +52,7 @@ def upload_file():
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(file_path)
 
-        #Redirect to the detect route
+        # Redirect to the detect route
         return redirect(url_for('detect_text'))
 
     return redirect(url_for('index', message='Invalid file type'))
@@ -65,31 +67,21 @@ def uploaded_file(filename):
 def detect_text():
     # Get the most recent file
     recent_file = get_most_recent_file()
+    result, error = card_detector.isolate_and_straighten_card(recent_file)
 
-    # Load the image using PIL
-    image = Image.open(recent_file).convert('RGB')
+    if error:
+        return render_template('index.html', message=error)
 
-    # Initialize the OCR model and processor
-    model = VisionEncoderDecoderModel.from_pretrained("microsoft/trocr-base-printed")
-    processor = TrOCRProcessor.from_pretrained("microsoft/trocr-base-printed")
-
-    # Process the image and generate text
-    pixel_values = processor(images=image, return_tensors="pt").pixel_values
-    generated_ids = model.generate(pixel_values)
-    generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
-
-    # Convert the recent file path to a filename
     filename = os.path.basename(recent_file)
-
     # Show image and text
-    return render_template('index.html', image_path=filename, extracted_text=generated_text)
+    return render_template('index.html', image_path=filename, extracted_text=result['extracted_text'])
 
 # Route for searching
 @app.route('/search', methods=['POST'])
 def search_card():
     card_name = request.form.get('card_name')
 
-    #Scryfall API
+    # Scryfall API
     scryfall_url = f"https://api.scryfall.com/cards/named?fuzzy={card_name}"
 
     # Make the API request
@@ -110,13 +102,13 @@ def search_card():
     else:
         return render_template('index.html', message="Card not found!")
 
-#Function to clean up the uploads folder
+# Function to clean up the uploads folder
 def cleanup_upload_folder():
     if os.path.exists(UPLOAD_FOLDER):
         shutil.rmtree(UPLOAD_FOLDER)
-        os.makedirs(UPLOAD_FOLDER)  #Recreate the folder for future use
+        os.makedirs(UPLOAD_FOLDER)  # Recreate the folder for future use
 
-#Register the cleanup function to be called on exit
+# Register the cleanup function to be called on exit
 atexit.register(cleanup_upload_folder)
 
 if __name__ == '__main__':
