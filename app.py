@@ -1,6 +1,6 @@
 # app.py
 
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory, jsonify
 import os
 import shutil
 import atexit
@@ -40,12 +40,12 @@ def index():
 def upload_file():
     if 'file' not in request.files:
         return redirect(url_for('index', message='No file part'))
-    
+
     file = request.files['file']
-    
+
     if file.filename == '':
         return redirect(url_for('index', message='No selected file'))
-    
+
     if file and allowed_file(file.filename):
         # Save the file directly in the upload folder
         filename = secure_filename(file.filename)
@@ -62,7 +62,7 @@ def upload_file():
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-# Route for performing OCR on the most recent image
+# Route for performing OCR on the most recent image and fetching card data
 @app.route('/detect', methods=['GET'])
 def detect_text():
     # Get the most recent file
@@ -73,10 +73,33 @@ def detect_text():
         return render_template('index.html', message=error)
 
     filename = os.path.basename(recent_file)
-    # Show image and text
-    return render_template('index.html', image_path=filename, extracted_text=result['extracted_text'])
+    card_name = result['extracted_text']
 
-# Route for searching
+    # Scryfall API
+    scryfall_url = f"https://api.scryfall.com/cards/named?fuzzy={card_name}"
+
+    # Make the API request
+    response = requests.get(scryfall_url)
+
+    # Check if the card is found
+    if response.status_code == 200:
+        card_data = response.json()
+        # Extract the relevant card details
+        card_info = {
+            'name': card_data.get('name'),
+            'type_line': card_data.get('type_line'),
+            'mana_cost': card_data.get('mana_cost', 'N/A'),
+            'oracle_text': card_data.get('oracle_text', 'N/A'),
+            'image_url': card_data.get('image_uris', {}).get('normal'),
+            'usd_price': card_data.get('prices', {}).get('usd', 'N/A')
+        }
+        # Show the image and card info
+        return render_template('index.html', image_path=filename, card_info=card_info)
+    else:
+        # Card not found, render the image and the extracted text
+        return render_template('index.html', image_path=filename, extracted_text=card_name, message="Card not found!")
+
+# Route for manual searching
 @app.route('/search', methods=['POST'])
 def search_card():
     card_name = request.form.get('card_name')
@@ -86,21 +109,37 @@ def search_card():
 
     # Make the API request
     response = requests.get(scryfall_url)
-    
-    # is card found
+
+    # Check if the card is found
     if response.status_code == 200:
         card_data = response.json()
         # Extract the relevant card details
-        card_info = {
+        card_info_manual = {
             'name': card_data.get('name'),
             'type_line': card_data.get('type_line'),
             'mana_cost': card_data.get('mana_cost', 'N/A'),
             'oracle_text': card_data.get('oracle_text', 'N/A'),
-            'image_url': card_data['image_uris'].get('normal') if 'image_uris' in card_data else None
+            'image_url': card_data.get('image_uris', {}).get('normal'),
+            'usd_price': card_data.get('prices', {}).get('usd', 'N/A')
         }
-        return render_template('index.html', card_info=card_info)
+        return render_template('index.html', card_info_manual=card_info_manual)
     else:
         return render_template('index.html', message="Card not found!")
+
+# Route for autocomplete suggestions
+@app.route('/autocomplete', methods=['GET'])
+def autocomplete():
+    term = request.args.get('term')
+    scryfall_url = f"https://api.scryfall.com/cards/autocomplete?q={term}"
+
+    response = requests.get(scryfall_url)
+
+    if response.status_code == 200:
+        data = response.json()
+        suggestions = data.get('data', [])
+        return jsonify(suggestions)
+    else:
+        return jsonify([])
 
 # Function to clean up the uploads folder
 def cleanup_upload_folder():

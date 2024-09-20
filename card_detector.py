@@ -1,5 +1,3 @@
-# card_detector.py (and also for detect.py, make sure this logic is the same)
-
 import cv2
 import numpy as np
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel
@@ -103,8 +101,14 @@ def perform_ocr(roi_image):
     # Thresholding to convert to binary image
     _, roi_image_thresh = cv2.threshold(roi_image_blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
+    # Convert single-channel image back to 3-channel by repeating the grayscale values across three channels
+    roi_image_rgb = cv2.cvtColor(roi_image_thresh, cv2.COLOR_GRAY2RGB)
+
+    # Check the dimensions of the image to debug
+    print(f"Image dimensions before processing: {roi_image_rgb.shape}")
+
     # Convert OpenCV image (numpy array) to PIL Image
-    pil_image = Image.fromarray(roi_image_thresh)
+    pil_image = Image.fromarray(roi_image_rgb)
 
     # Load TrOCR processor and model
     processor = TrOCRProcessor.from_pretrained('microsoft/trocr-base-printed')
@@ -127,8 +131,7 @@ def clean_extracted_text(text):
 
 def load_card_names(json_file):
     with open(json_file, 'r', encoding='utf-8') as f:
-        cards_data = json.load(f)
-    card_names = [card['name'] for card in cards_data]
+        card_names = json.load(f)
     return card_names
 
 def fuzzy_match_card_name(extracted_text, card_names):
