@@ -1,5 +1,3 @@
-# app.py
-
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory, jsonify
 import os
 import shutil
@@ -11,31 +9,32 @@ import card_detector
 
 app = Flask(__name__)
 
-# Defines the upload folder and allowed extensions
 UPLOAD_FOLDER = './uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {'png', 'jpeg', 'jpg', 'svg'}
 
-# Creates the uploads folder if it doesn't exist
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-# Function to check allowed file extensions
+
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Function to get the most recent file in the uploads folder
+
+
 def get_most_recent_file():
     files_in_folder = [os.path.join(UPLOAD_FOLDER, f) for f in os.listdir(UPLOAD_FOLDER) if os.path.isfile(os.path.join(UPLOAD_FOLDER, f))]
     most_recent_file = max(files_in_folder, key=os.path.getmtime)
     return most_recent_file
 
-# Route for the home page
+
 @app.route('/')
 def index():
     return render_template('index.html')
 
-# Route for uploading the image
+
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
@@ -47,25 +46,23 @@ def upload_file():
         return redirect(url_for('index', message='No selected file'))
 
     if file and allowed_file(file.filename):
-        # Save the file directly in the upload folder
         filename = secure_filename(file.filename)
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(file_path)
 
-        # Redirect to the detect route
         return redirect(url_for('detect_text'))
 
     return redirect(url_for('index', message='Invalid file type'))
 
-# Route to serve files from the uploads folder
+
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-# Route for performing OCR on the most recent image and fetching card data
+
+
 @app.route('/detect', methods=['GET'])
 def detect_text():
-    # Get the most recent file
     recent_file = get_most_recent_file()
     result, error = card_detector.isolate_and_straighten_card(recent_file)
 
@@ -75,16 +72,12 @@ def detect_text():
     filename = os.path.basename(recent_file)
     card_name = result['extracted_text']
 
-    # Scryfall API
+    # Scryfall API request
     scryfall_url = f"https://api.scryfall.com/cards/named?fuzzy={card_name}"
-
-    # Make the API request
     response = requests.get(scryfall_url)
 
-    # Check if the card is found
     if response.status_code == 200:
         card_data = response.json()
-        # Extract the relevant card details
         card_info = {
             'name': card_data.get('name'),
             'type_line': card_data.get('type_line'),
@@ -93,27 +86,21 @@ def detect_text():
             'image_url': card_data.get('image_uris', {}).get('normal'),
             'usd_price': card_data.get('prices', {}).get('usd', 'N/A')
         }
-        # Show the image and card info
         return render_template('index.html', image_path=filename, card_info=card_info)
     else:
-        # Card not found, render the image and the extracted text
         return render_template('index.html', image_path=filename, extracted_text=card_name, message="Card not found!")
 
-# Route for manual searching
+
+# Manual card search
 @app.route('/search', methods=['POST'])
 def search_card():
     card_name = request.form.get('card_name')
 
-    # Scryfall API
     scryfall_url = f"https://api.scryfall.com/cards/named?fuzzy={card_name}"
-
-    # Make the API request
     response = requests.get(scryfall_url)
 
-    # Check if the card is found
     if response.status_code == 200:
         card_data = response.json()
-        # Extract the relevant card details
         card_info_manual = {
             'name': card_data.get('name'),
             'type_line': card_data.get('type_line'),
@@ -126,7 +113,8 @@ def search_card():
     else:
         return render_template('index.html', message="Card not found!")
 
-# Route for autocomplete suggestions
+
+# Autocomplete card search
 @app.route('/autocomplete', methods=['GET'])
 def autocomplete():
     term = request.args.get('term')
@@ -141,13 +129,14 @@ def autocomplete():
     else:
         return jsonify([])
 
-# Function to clean up the uploads folder
+
+
 def cleanup_upload_folder():
     if os.path.exists(UPLOAD_FOLDER):
         shutil.rmtree(UPLOAD_FOLDER)
-        os.makedirs(UPLOAD_FOLDER)  # Recreate the folder for future use
+        os.makedirs(UPLOAD_FOLDER)
 
-# Register the cleanup function to be called on exit
+
 atexit.register(cleanup_upload_folder)
 
 if __name__ == '__main__':

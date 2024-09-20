@@ -8,7 +8,9 @@ from fuzzywuzzy import fuzz, process
 import re
 
 def isolate_and_straighten_card(image_path):
-    # Ensure the image path is the same and accessible
+    """
+    load in and process the image for text extraction
+    """
     image = cv2.imread(image_path)
     if image is None:
         return None, "Error: Could not read image."
@@ -56,6 +58,7 @@ def isolate_and_straighten_card(image_path):
         'cleaned_text': cleaned_text
     }, None
 
+
 def order_points(pts):
     rect = np.zeros((4, 2), dtype="float32")
     s = pts.sum(axis=1)
@@ -66,7 +69,11 @@ def order_points(pts):
     rect[3] = pts[np.argmax(diff)]
     return rect
 
+
 def four_point_transform(image, rect):
+    """
+    Perform a perspective transform to obtain a top-down view of the card.
+    """
     (tl, tr, br, bl) = rect
     widthA = np.hypot(br[0] - bl[0], br[1] - bl[1])
     widthB = np.hypot(tr[0] - tl[0], tr[1] - tl[1])
@@ -74,10 +81,11 @@ def four_point_transform(image, rect):
     heightA = np.hypot(tr[0] - br[0], tr[1] - br[1])
     heightB = np.hypot(tl[0] - bl[0], tl[1] - bl[1])
     maxHeight = max(int(heightA), int(heightB))
-    dst = np.array([[0, 0], [maxWidth -1, 0], [maxWidth -1, maxHeight -1], [0, maxHeight -1]], dtype="float32")
+    dst = np.array([[0, 0], [maxWidth - 1, 0], [maxWidth - 1, maxHeight - 1], [0, maxHeight - 1]], dtype="float32")
     M = cv2.getPerspectiveTransform(rect, dst)
     warped = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
     return warped
+
 
 def extract_card_name_roi_fixed(card_image):
     height, width = card_image.shape[:2]
@@ -85,43 +93,31 @@ def extract_card_name_roi_fixed(card_image):
     roi_y = int(height * 0.03)
     roi_w = int(width * 0.80)
     roi_h = int(height * 0.10)
-    roi = card_image[roi_y:roi_y+roi_h, roi_x:roi_x+roi_w]
+    roi = card_image[roi_y:roi_y + roi_h, roi_x:roi_x + roi_w]
     return roi
 
+
 def perform_ocr(roi_image):
-    # Pre-process the ROI image for better OCR results
-    roi_image_gray = cv2.cvtColor(roi_image, cv2.COLOR_BGR2GRAY)  # Convert to grayscale
-
-    # Increase contrast
+    """
+    Perform Optical Character Recognition (OCR) on the region of interest (ROI) image.
+    """
+    roi_image_gray = cv2.cvtColor(roi_image, cv2.COLOR_BGR2GRAY)
     roi_image_gray = cv2.equalizeHist(roi_image_gray)
-
-    # Apply a slight blur to reduce noise
     roi_image_blur = cv2.GaussianBlur(roi_image_gray, (3, 3), 0)
-
-    # Thresholding to convert to binary image
     _, roi_image_thresh = cv2.threshold(roi_image_blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
-    # Convert single-channel image back to 3-channel by repeating the grayscale values across three channels
     roi_image_rgb = cv2.cvtColor(roi_image_thresh, cv2.COLOR_GRAY2RGB)
 
-    # Check the dimensions of the image to debug
-    print(f"Image dimensions before processing: {roi_image_rgb.shape}")
-
-    # Convert OpenCV image (numpy array) to PIL Image
     pil_image = Image.fromarray(roi_image_rgb)
 
-    # Load TrOCR processor and model
     processor = TrOCRProcessor.from_pretrained('microsoft/trocr-base-printed')
     model = VisionEncoderDecoderModel.from_pretrained('microsoft/trocr-base-printed')
 
-    # Prepare image for the model
     pixel_values = processor(images=pil_image, return_tensors="pt").pixel_values
-
-    # Generate text
     generated_ids = model.generate(pixel_values)
     generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
 
     return generated_text
+
 
 def clean_extracted_text(text):
     text = re.sub(r'[^A-Za-z\s]', '', text)
@@ -129,10 +125,12 @@ def clean_extracted_text(text):
     text = ' '.join(text.split())
     return text
 
+
 def load_card_names(json_file):
     with open(json_file, 'r', encoding='utf-8') as f:
         card_names = json.load(f)
     return card_names
+
 
 def fuzzy_match_card_name(extracted_text, card_names):
     matches = process.extract(extracted_text, card_names, scorer=fuzz.token_sort_ratio, limit=5)
