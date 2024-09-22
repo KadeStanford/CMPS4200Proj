@@ -15,8 +15,14 @@ To check your version then run.
 
 ```
 pip install Flask
+pip install requests
+pip install opencv-python
+pip install torch
+pip install ultralytics
+pip install Pillow
+pip install transformers
 ```
-To install Flask to make the frontend and backend work together.
+To install all the required packages to run the frontend/backend of the project.
 
 
 ```
