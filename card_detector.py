@@ -1,145 +1,134 @@
+import os
 import cv2
 import numpy as np
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel
 from PIL import Image
-import torch
-import json
-from fuzzywuzzy import fuzz, process
 import re
+from ultralytics import YOLO
 
-def isolate_and_straighten_card(image_path):
+# Function to find the latest model
+def find_latest_model(runs_dir):
+    """Find the latest best.pt model in the runs directory."""
+    best_model_path = None
+    latest_time = 0
+
+    # Traverse the directory tree to find all best.pt files
+    for root, _, files in os.walk(runs_dir):
+        for file in files:
+            if file == "best.pt":
+                file_path = os.path.join(root, file)
+                # Get the last modified time
+                file_time = os.path.getmtime(file_path)
+                # Update if this file is newer
+                if file_time > latest_time:
+                    latest_time = file_time
+                    best_model_path = file_path
+
+    return best_model_path
+
+# Base directory where the project is located
+project_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Find the latest best.pt model
+runs_dir = os.path.join(project_dir, "runs")  # Base directory where runs are stored
+yolo_model_path = find_latest_model(runs_dir)
+
+if yolo_model_path:
+    print(f"Using latest model: {yolo_model_path}")
+else:
+    print("No best.pt model found. Exiting.")
+    exit()
+
+# Load the YOLO model with the latest best.pt
+yolo_model = YOLO(yolo_model_path)  # Load the trained YOLO model
+
+# Load TrOCR model and processor
+processor = TrOCRProcessor.from_pretrained('microsoft/trocr-base-printed')
+trocr_model = VisionEncoderDecoderModel.from_pretrained('microsoft/trocr-base-printed')
+
+def isolate_and_extract_card_name(image_path):
     """
-    load in and process the image for text extraction
+    Detects multiple card names using YOLO and extracts text using TrOCR.
+    Returns a list of results for each detected card.
     """
-    image = cv2.imread(image_path)
-    if image is None:
-        return None, "Error: Could not read image."
+    try:
+        # Perform object detection with YOLO to find the card name regions
+        results = yolo_model(image_path, imgsz=640, device="cpu")[0]  # Assuming single detection per image
 
-    original_image = image.copy()
-    height, width = image.shape[:2]
-    max_height = 1000
-    if height > max_height:
-        scale = max_height / height
-        image = cv2.resize(image, None, fx=scale, fy=scale)
-        original_image = cv2.resize(original_image, None, fx=scale, fy=scale)
-        height, width = image.shape[:2]
+        # Read the original image for visualization
+        original_image = cv2.imread(image_path)
+        if original_image is None:
+            return None, "Error: Could not read image."
 
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    blur = cv2.GaussianBlur(gray, (5, 5), 0)
-    edges = cv2.Canny(blur, 50, 150, apertureSize=3)
-    contours, _ = cv2.findContours(edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-    contours = sorted(contours, key=cv2.contourArea, reverse=True)[:10]
+        extracted_cards = []  # List to store information of detected cards
 
-    card_contour = None
-    for cnt in contours:
-        peri = cv2.arcLength(cnt, True)
-        approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
-        if len(approx) == 4:
-            card_contour = approx
-            break
+        # Iterate over each detected box
+        for box in results.boxes:
+            cls = int(box.cls[0])
+            if cls == 1:  # Assuming 'card_name' is class 1
+                x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
+                card_name_roi = extract_roi(image_path, x1, y1, x2, y2)
+                
+                # Perform OCR on the detected ROI
+                extracted_text = perform_ocr(card_name_roi)
+                cleaned_text = clean_extracted_text(extracted_text)
+                
+                # Store each card's information
+                extracted_cards.append({
+                    'original_image': original_image,
+                    'card_name_roi': card_name_roi,
+                    'extracted_text': extracted_text,
+                    'cleaned_text': cleaned_text,
+                    'bbox': (x1, y1, x2, y2)  # Bounding box coordinates for visualization
+                })
 
-    if card_contour is None:
-        return None, "Error: Could not find card contour."
+        if len(extracted_cards) == 0:
+            return None, "Error: Could not find any card name bounding box."
 
-    rect = order_points(card_contour.reshape(4, 2))
-    warped = four_point_transform(image, rect)
+        return extracted_cards[0], None  # Return the first card found
 
-    output_path = 'output.jpg'
-    cv2.imwrite(output_path, warped)
+    except Exception as e:
+        return None, f"Error during image processing: {str(e)}"
 
-    card_name_roi = extract_card_name_roi_fixed(warped)
-    extracted_text = perform_ocr(card_name_roi)
-    cleaned_text = clean_extracted_text(extracted_text)
-    return {
-        'original_image': original_image,
-        'warped_image': warped,
-        'card_name_roi': card_name_roi,
-        'extracted_text': extracted_text,
-        'cleaned_text': cleaned_text
-    }, None
-
-
-def order_points(pts):
-    rect = np.zeros((4, 2), dtype="float32")
-    s = pts.sum(axis=1)
-    diff = np.diff(pts, axis=1)
-    rect[0] = pts[np.argmin(s)]
-    rect[1] = pts[np.argmin(diff)]
-    rect[2] = pts[np.argmax(s)]
-    rect[3] = pts[np.argmax(diff)]
-    return rect
-
-
-def four_point_transform(image, rect):
+def extract_roi(image_path, x1, y1, x2, y2):
     """
-    Perform a perspective transform to obtain a top-down view of the card.
+    Extracts the region of interest (ROI) from the image based on the bounding box coordinates.
     """
-    (tl, tr, br, bl) = rect
-    widthA = np.hypot(br[0] - bl[0], br[1] - bl[1])
-    widthB = np.hypot(tr[0] - tl[0], tr[1] - tl[1])
-    maxWidth = max(int(widthA), int(widthB))
-    heightA = np.hypot(tr[0] - br[0], tr[1] - br[1])
-    heightB = np.hypot(tl[0] - bl[0], tl[1] - bl[1])
-    maxHeight = max(int(heightA), int(heightB))
-    dst = np.array([[0, 0], [maxWidth - 1, 0], [maxWidth - 1, maxHeight - 1], [0, maxHeight - 1]], dtype="float32")
-    M = cv2.getPerspectiveTransform(rect, dst)
-    warped = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
-    return warped
-
-
-def extract_card_name_roi_fixed(card_image):
-    height, width = card_image.shape[:2]
-    roi_x = int(width * 0.05)
-    roi_y = int(height * 0.03)
-    roi_w = int(width * 0.80)
-    roi_h = int(height * 0.10)
-    roi = card_image[roi_y:roi_y + roi_h, roi_x:roi_x + roi_w]
-    return roi
-
+    try:
+        image = cv2.imread(image_path)
+        if image is None:
+            return None
+        roi = image[y1:y2, x1:x2]
+        return roi
+    except Exception as e:
+        print(f"Error extracting ROI: {str(e)}")
+        return None
 
 def perform_ocr(roi_image):
     """
     Perform Optical Character Recognition (OCR) on the region of interest (ROI) image.
     """
-    roi_image_gray = cv2.cvtColor(roi_image, cv2.COLOR_BGR2GRAY)
-    roi_image_gray = cv2.equalizeHist(roi_image_gray)
-    roi_image_blur = cv2.GaussianBlur(roi_image_gray, (3, 3), 0)
-    _, roi_image_thresh = cv2.threshold(roi_image_blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    roi_image_rgb = cv2.cvtColor(roi_image_thresh, cv2.COLOR_GRAY2RGB)
+    try:
+        # Convert the ROI image to RGB if needed
+        if len(roi_image.shape) == 2 or roi_image.shape[2] == 1:
+            roi_image_rgb = cv2.cvtColor(roi_image, cv2.COLOR_GRAY2RGB)
+        else:
+            roi_image_rgb = roi_image
 
-    pil_image = Image.fromarray(roi_image_rgb)
+        pil_image = Image.fromarray(roi_image_rgb)
 
-    processor = TrOCRProcessor.from_pretrained('microsoft/trocr-base-printed')
-    model = VisionEncoderDecoderModel.from_pretrained('microsoft/trocr-base-printed')
+        # Prepare the image for the TrOCR model
+        pixel_values = processor(images=pil_image, return_tensors="pt").pixel_values
+        generated_ids = trocr_model.generate(pixel_values)
+        generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
 
-    pixel_values = processor(images=pil_image, return_tensors="pt").pixel_values
-    generated_ids = model.generate(pixel_values)
-    generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
-
-    return generated_text
-
+        return generated_text
+    except Exception as e:
+        print(f"Error during OCR: {str(e)}")
+        return ""
 
 def clean_extracted_text(text):
     text = re.sub(r'[^A-Za-z\s]', '', text)
     text = text.lower()
     text = ' '.join(text.split())
     return text
-
-
-def load_card_names(json_file):
-    with open(json_file, 'r', encoding='utf-8') as f:
-        card_names = json.load(f)
-    return card_names
-
-
-def fuzzy_match_card_name(extracted_text, card_names):
-    matches = process.extract(extracted_text, card_names, scorer=fuzz.token_sort_ratio, limit=5)
-    threshold = 60
-    best_match = None
-    best_score = 0
-    for match in matches:
-        name, score = match
-        if score > best_score:
-            best_match = name
-            best_score = score
-    return best_match
