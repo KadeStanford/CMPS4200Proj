@@ -1,6 +1,5 @@
 /* style.css */
 
-/* Reset some basic elements */
 body,
 h1,
 h2,
@@ -16,14 +15,13 @@ button {
   box-sizing: border-box;
 }
 
-/* Body styling */
 body {
   font-family: Arial, sans-serif;
-  background-image: url('./cards-large.jpg'); /* Replace with the actual path to your image */
-  background-size: cover; /* Ensures the image covers the whole screen */
-  background-position: center; /* Centers the image */
-  background-repeat: no-repeat; /* Prevents the image from repeating */
-  min-height: 100vh; /* Ensures the body always takes at least the full viewport height */
+  background-image: url('./cards-large.jpg');
+  background-size: cover;
+  background-position: center; 
+  background-repeat: no-repeat; 
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
@@ -55,25 +53,25 @@ body {
 .search-form {
   display: flex;
   position: relative;
-  border-radius: 30px; /* Round the edges of the entire search form */
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); /* Adds a subtle shadow for a cleaner look */
+  border-radius: 30px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); 
 }
 
 .search-form input[type="text"] {
-  padding: 10px 20px; /* Increased padding for a cleaner look */
+  padding: 10px 20px; 
   font-size: 16px;
-  border: none; /* Removes borders for a smoother appearance */
-  outline: none; /* Removes the default outline when focused */
-  border-radius: 30px 0 0 30px; /* Round the left side of the input */
-  flex-grow: 1; /* Makes the input expand to fill available space */
+  border: none; 
+  outline: none;
+  border-radius: 30px 0 0 30px; 
+  flex-grow: 1; 
 }
 
 .search-form input[type="text"]::placeholder {
-  color: #aaa; /* Lightens the placeholder text for a cleaner look */
+  color: #aaa;
 }
 
 .search-form button {
-  padding: 10px 20px; /* Adjusted padding for better balance */
+  padding: 10px 20px;
   font-size: 16px;
   border: none;
   background: linear-gradient(170deg, #098fe7, #00e1ff);
