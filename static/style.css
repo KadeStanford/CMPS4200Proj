@@ -125,11 +125,12 @@ body {
 
 /* Upload Form */
 .upload-form {
+  padding-top: 17%;
   margin-bottom: 30px;
 }
 
 .file-upload-area {
-  border: 2px solid #000000;
+  padding-top: 20px;
   padding: 20px;
   text-align: center;
   cursor: pointer;
