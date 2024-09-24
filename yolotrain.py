@@ -53,7 +53,7 @@ def main():
     # Start new training
     train_results = model.train(
         data="E:/CMPS4200Proj/mtg_dataset/data.yaml",  # Absolute path to your dataset YAML
-        epochs=100,  # Number of new training epochs
+        epochs=200,  # Number of new training epochs
         imgsz=640,  # Training image size
         device=device,  # Use the detected device
         workers=4,  # Set the number of workers to 4, or adjust as needed
