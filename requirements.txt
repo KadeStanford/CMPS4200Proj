@@ -54,3 +54,4 @@ ultralytics==8.2.98
 ultralytics-thop==2.0.6
 urllib3==2.2.3
 Werkzeug==3.0.4
+ultralytics

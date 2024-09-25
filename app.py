@@ -169,4 +169,4 @@ def cleanup_upload_folder():
 atexit.register(cleanup_upload_folder)
 
 if __name__ == '__main__':
-    app.run(debug=False, port=5001)  # Turn off debug mode to avoid Flask auto-restarting
+    app.run(debug=False, port=5001) 
