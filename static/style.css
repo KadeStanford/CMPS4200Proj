@@ -1,6 +1,5 @@
 /* style.css */
 
-/* Reset some basic elements */
 body,
 h1,
 h2,
@@ -16,15 +15,21 @@ button {
   box-sizing: border-box;
 }
 
-/* Body styling */
 body {
   font-family: Arial, sans-serif;
-  background-color: #f5f5f5;
+  background-image: url('./cards-large.jpg');
+  background-size: cover;
+  background-position: center; 
+  background-repeat: no-repeat; 
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
+
 
 /* Navigation Bar */
 .navbar {
-  background-color: #2e8b57; /* SeaGreen */
+  background: linear-gradient(170deg,#0cd1eb,#d400ff);
   padding: 10px 0;
 }
 
@@ -44,45 +49,50 @@ body {
   text-decoration: none;
 }
 
+/* Updated Search Form */
 .search-form {
   display: flex;
-  position: relative; /* Added to position the autocomplete dropdown */
+  position: relative;
+  border-radius: 30px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); 
 }
 
 .search-form input[type="text"] {
-  padding: 5px 10px;
+  padding: 10px 20px; 
   font-size: 16px;
-  border: 1px solid #ccc;
-  border-right: none;
-  border-radius: 3px 0 0 3px;
+  border: none; 
+  outline: none;
+  border-radius: 30px 0 0 30px; 
+  flex-grow: 1; 
+}
+
+.search-form input[type="text"]::placeholder {
+  color: #aaa;
 }
 
 .search-form button {
-  padding: 5px 15px;
+  padding: 10px 20px;
   font-size: 16px;
   border: none;
-  background-color: #3cb371; /* MediumSeaGreen */
+  background: linear-gradient(170deg, #098fe7, #00e1ff);
   color: #fff;
   cursor: pointer;
-  border-radius: 0 3px 3px 0;
+  border-radius: 0 30px 30px 0; /* Rounds the right side of the button */
+  transition: background-color 0.3s ease;
 }
 
 .search-form button:hover {
   background-color: #2e8b57; /* SeaGreen */
 }
 
-/* Autocomplete Items */
+/* Fix for Autocomplete Items */
 .autocomplete-items {
   position: absolute;
-  top: 100%; /* Position below the search input */
-  left: 0;
-  right: 0;
-  border: 1px solid #ccc;
-  border-top: none;
-  z-index: 99;
+  z-index: 1000; /* Ensure it appears above other elements */
   background-color: #fff;
-  max-height: 200px; /* Max height for the dropdown */
-  overflow-y: auto; /* Scroll if exceeds max height */
+  max-height: 200px;
+  overflow-y: auto;
+  border-radius: 0 0 10px 10px; /* Rounded corners for a cleaner look */
 }
 
 .autocomplete-items li {
@@ -115,16 +125,18 @@ body {
 
 /* Upload Form */
 .upload-form {
+  padding-top: 17%;
   margin-bottom: 30px;
 }
 
 .file-upload-area {
-  border: 2px dashed #ccc;
+  padding-top: 20px;
   padding: 20px;
   text-align: center;
   cursor: pointer;
   position: relative;
   background-color: #fff;
+  border-radius: 15px;
 }
 
 .upload-icon {
@@ -135,17 +147,20 @@ body {
 .file-status-message {
   margin-top: 10px;
   font-style: italic;
+  color: #ffffff;
+  text-align: center;
+  padding-top: 10px;
+  padding-bottom: 10px;
 }
 
 .upload-button {
   display: block;
   margin: 10px auto;
   padding: 10px 20px;
-  background-color: #3cb371; /* MediumSeaGreen */
+  background: linear-gradient(170deg, #098fe7, #00e1ff);
   color: #fff;
-  border: none;
   cursor: not-allowed;
-  border-radius: 5px;
+  border-radius: 15px;
 }
 
 .upload-button:enabled {
@@ -164,11 +179,10 @@ body {
 
 .upload-again-button {
   padding: 8px 16px;
-  background-color: #3cb371; /* MediumSeaGreen */
+  background: linear-gradient(170deg, #098fe7, #00e1ff);
   color: #fff;
-  border: none;
   cursor: pointer;
-  border-radius: 5px;
+  border-radius: 15px;
 }
 
 .upload-again-button:hover {
@@ -192,7 +206,7 @@ body {
 .card-image-container img {
   max-width: 100%;
   height: auto;
-  border: 1px solid #ccc;
+  border: 2px solid #000000;
 }
 
 /* Scryfall Image Container */
@@ -212,7 +226,7 @@ body {
   min-width: 300px;
   background-color: #fff;
   padding: 20px;
-  border: 1px solid #ccc;
+  border: 2px solid #000000;
 }
 
 .card-info h2 {

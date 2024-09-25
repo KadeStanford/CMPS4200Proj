@@ -1,8 +1,8 @@
 task: detect
 mode: train
-model: yolov8n.pt
+model: E:/CMPS4200Proj/runs\train\weights\best.pt
 data: E:/CMPS4200Proj/mtg_dataset/data.yaml
-epochs: 100
+epochs: 200
 time: null
 patience: 100
 batch: 16
