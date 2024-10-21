@@ -40,7 +40,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  position: relative; /* Added to create a positioning context */
+  position: relative;
 }
 
 .logo {
@@ -77,22 +77,22 @@ body {
   background: linear-gradient(170deg, #098fe7, #00e1ff);
   color: #fff;
   cursor: pointer;
-  border-radius: 0 30px 30px 0; /* Rounds the right side of the button */
+  border-radius: 0 30px 30px 0;
   transition: background-color 0.3s ease;
 }
 
 .search-form button:hover {
-  background-color: #2e8b57; /* SeaGreen */
+  background-color: #2e8b57;
 }
 
 /* Fix for Autocomplete Items */
 .autocomplete-items {
   position: absolute;
-  z-index: 1000; /* Ensure it appears above other elements */
+  z-index: 1000;
   background-color: #fff;
   max-height: 200px;
   overflow-y: auto;
-  border-radius: 0 0 10px 10px; /* Rounded corners for a cleaner look */
+  border-radius: 0 0 10px 10px; 
 }
 
 .autocomplete-items li {
@@ -168,7 +168,7 @@ body {
 }
 
 .upload-button:enabled:hover {
-  background-color: #2e8b57; /* SeaGreen */
+  background-color: #2e8b57;
 }
 
 /* Upload Again Button */
@@ -186,7 +186,7 @@ body {
 }
 
 .upload-again-button:hover {
-  background-color: #2e8b57; /* SeaGreen */
+  background-color: #2e8b57;
 }
 
 /* Content Container */
@@ -195,18 +195,21 @@ body {
   flex-wrap: wrap;
   gap: 20px;
   margin-bottom: 30px;
+  border-radius: 10px;
 }
 
 /* Card Image Container */
 .card-image-container {
   flex: 1;
   min-width: 300px;
+  border-radius: 10px;
 }
 
 .card-image-container img {
   max-width: 100%;
   height: auto;
   border: 2px solid #000000;
+  border-radius: 10px;
 }
 
 /* Scryfall Image Container */
@@ -218,6 +221,8 @@ body {
   max-width: 100%;
   height: auto;
   border: 1px solid #ccc;
+  display: block;
+  margin: 0 auto;
 }
 
 /* Card Information */
@@ -227,6 +232,9 @@ body {
   background-color: #fff;
   padding: 20px;
   border: 2px solid #000000;
+  border-radius: 10px;
+  background-color: #6f44ab;
+  color: #ffffff;
 }
 
 .card-info h2 {
@@ -250,6 +258,60 @@ body {
 
 .detected-info p {
   margin-bottom: 10px;
+}
+
+/* Remove Card Button */
+.remove-card-button {
+  padding: 10px 20px;
+  background: linear-gradient(170deg, #ff6347, #ff4500);
+  color: #fff;
+  cursor: pointer;
+  border-radius: 15px;
+  display: block;
+  margin: 10px auto;
+  text-align: center;
+  width: fit-content;
+}
+
+.remove-card-button:hover {
+  background-color: #e63900;
+}
+
+/* Store Card Button */
+.store-card-button {
+  padding: 10px 20px;
+  background: linear-gradient(170deg, #32cd32, #228b22);
+  color: #fff;
+  cursor: pointer;
+  border-radius: 15px;
+  display: block;
+  margin: 10px auto;
+  text-align: center;
+  width: fit-content;
+}
+
+.store-card-button:hover {
+  background-color: #2e8b57;
+}
+
+/* Upload History Button */
+.upload-history-button {
+  padding: 10px 20px;
+  background: linear-gradient(170deg, #32cd32, #228b22);
+  color: #ffffff;
+  cursor: pointer;
+  border-radius: 15px;
+  display: block;
+  text-align: center;
+  position: fixed;
+  bottom: 75px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000; 
+}
+
+.upload-history-button:hover {
+  background-color: #2e8b57; 
 }
 
 /* Responsive Design */

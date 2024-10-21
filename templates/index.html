@@ -66,6 +66,9 @@
         <button type="submit" class="upload-button" disabled>
           Upload Image
         </button>
+        <button type="button" class="upload-history-button">
+          Upload History
+        </button>
       </form>
       {% else %}
       <!-- Display 'Upload Again' button -->
@@ -108,6 +111,8 @@
             />
           </div>
           {% endif %}
+          <button class="store-card-button">Store Card</button>
+          <button class="remove-card-button">Remove Card</button>
         </div>
       </div>
       {% elif extracted_text %}
