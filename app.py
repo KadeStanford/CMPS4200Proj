@@ -6,23 +6,28 @@ from werkzeug.utils import secure_filename
 from PIL import Image
 import requests
 import card_detector
-import gc  # Garbage collector
+import gc
 
 app = Flask(__name__)
 
 UPLOAD_FOLDER = './uploads'
+TEMP_FOLDER = './temp_uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['TEMP_FOLDER'] = TEMP_FOLDER
 ALLOWED_EXTENSIONS = {'png', 'jpeg', 'jpg', 'svg'}
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
+
+if not os.path.exists(TEMP_FOLDER):
+    os.makedirs(TEMP_FOLDER)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def get_most_recent_file():
     try:
-        files_in_folder = [os.path.join(UPLOAD_FOLDER, f) for f in os.listdir(UPLOAD_FOLDER) if os.path.isfile(os.path.join(UPLOAD_FOLDER, f))]
+        files_in_folder = [os.path.join(TEMP_FOLDER, f) for f in os.listdir(TEMP_FOLDER) if os.path.isfile(os.path.join(TEMP_FOLDER, f))]
         if not files_in_folder:
             return None
         most_recent_file = max(files_in_folder, key=os.path.getmtime)
@@ -48,27 +53,39 @@ def upload_file():
 
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(file_path)
+            temp_file_path = os.path.join(app.config['TEMP_FOLDER'], filename)
+            file.save(temp_file_path)
             
-            # Explicitly clean up memory after saving the file
             del file
             gc.collect()
 
-            return redirect(url_for('detect_text'))
+            return redirect(url_for('detect_text', temp_image=filename))
 
         return redirect(url_for('index', message='Invalid file type'))
     except Exception as e:
         print(f"Error uploading file: {str(e)}")
         return redirect(url_for('index', message='Error during file upload'))
 
+@app.route('/temp_uploads/<filename>')
+def temp_uploaded_file(filename):
+    try:
+        return send_from_directory(app.config['TEMP_FOLDER'], filename)
+    except Exception as e:
+        print(f"Error sending temp file {filename}: {str(e)}")
+        return "File not found", 404
+
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     try:
-        return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+        # Check if the file exists in the permanent uploads folder
+        if os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], filename)):
+            return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+        # Fall back to temp_uploads if not in uploads
+        return send_from_directory(app.config['TEMP_FOLDER'], filename)
     except Exception as e:
         print(f"Error sending file {filename}: {str(e)}")
         return "File not found", 404
+
 
 @app.route('/detect', methods=['GET'])
 def detect_text():
@@ -83,9 +100,8 @@ def detect_text():
             return render_template('index.html', message=error)
 
         filename = os.path.basename(recent_file)
-        card_name = result['cleaned_text']  # Use cleaned_text for better fuzzy matching
+        card_name = result['cleaned_text']
 
-        # Scryfall API request
         scryfall_url = f"https://api.scryfall.com/cards/named?fuzzy={card_name}"
         response = requests.get(scryfall_url)
 
@@ -106,10 +122,24 @@ def detect_text():
         print(f"Error during detection: {str(e)}")
         return render_template('index.html', message="Error during detection process.")
     finally:
-        # Clean up memory after processing
         gc.collect()
 
-# Manual card search
+@app.route('/store_card', methods=['POST'])
+def store_card():
+    try:
+        temp_image = request.form.get('image_path')
+        temp_image_path = os.path.join(app.config['TEMP_FOLDER'], temp_image)
+        
+        if os.path.exists(temp_image_path):
+            permanent_path = os.path.join(app.config['UPLOAD_FOLDER'], temp_image)
+            shutil.move(temp_image_path, permanent_path)
+            return redirect(url_for('index', message="Card stored successfully!"))
+        else:
+            return redirect(url_for('index', message="Temporary image not found"))
+    except Exception as e:
+        print(f"Error storing card: {str(e)}")
+        return redirect(url_for('index', message="Error storing card"))
+
 @app.route('/search', methods=['POST'])
 def search_card():
     try:
@@ -137,7 +167,6 @@ def search_card():
     finally:
         gc.collect()
 
-# Autocomplete card search
 @app.route('/autocomplete', methods=['GET'])
 def autocomplete():
     try:
@@ -158,15 +187,15 @@ def autocomplete():
     finally:
         gc.collect()
 
-def cleanup_upload_folder():
+def cleanup_temp_folder():
     try:
-        if os.path.exists(UPLOAD_FOLDER):
-            shutil.rmtree(UPLOAD_FOLDER)
-            os.makedirs(UPLOAD_FOLDER)
+        if os.path.exists(TEMP_FOLDER):
+            shutil.rmtree(TEMP_FOLDER)
+            os.makedirs(TEMP_FOLDER)
     except Exception as e:
-        print(f"Error cleaning up upload folder: {str(e)}")
+        print(f"Error cleaning up temp folder: {str(e)}")
 
-atexit.register(cleanup_upload_folder)
+atexit.register(cleanup_temp_folder)
 
 if __name__ == '__main__':
-    app.run(debug=False, port=5001) 
+    app.run(debug=False, port=5001)
