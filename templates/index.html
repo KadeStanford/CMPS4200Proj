@@ -92,7 +92,6 @@
             class="card-image"
           />
         </div>
-      
 
         <!-- Card Information -->
         <div class="card-info">
@@ -113,11 +112,11 @@
           </div>
           {% endif %}
           <!-- Store Card Form -->
-          <form action="{{ url_for('store_card') }}" method="POST">
+          <form id="storeCardForm">
             <input type="hidden" name="image_path" value="{{ image_path }}" />
-            <button type="submit" class="store-card-button">Store Card</button>
+            <button type="button" class="store-card-button" onclick="storeCard()">Store Card</button>
           </form>
-          <button class="remove-card-button">Remove Card</button>
+          <button type="button" class="remove-card-button" onclick="removeCard()">Remove Card</button>
         </div>
       </div>
       {% elif extracted_text %}
@@ -157,111 +156,133 @@
       </div>
       {% endif %}
     </div>
+    
     <script>
-        // Triggers file input when the file-upload-area is clicked
-        const fileUploadArea = document.querySelector(".file-upload-area");
-        if (fileUploadArea) {
-          fileUploadArea.addEventListener("click", function () {
-            document.querySelector(".file-input").click();
-          });
-        }
-      
-        // Enables the "Upload Image" button only after a file has been selected
-        const fileInput = document.querySelector(".file-input");
-        if (fileInput) {
-          fileInput.addEventListener("change", function () {
-            const fileName = this.files[0]?.name || "";
-            if (fileName) {
-              document.querySelector(".file-status-message").textContent =
-                "File selected: " + fileName;
-              document.querySelector(".upload-button").disabled = false;
-            }
-          });
-        }
-      
-        // Autocomplete functionality
-        const searchInput = document.getElementById("card-search-input");
-        const autocompleteList = document.getElementById("autocomplete-list");
-      
-        let currentFocus = -1;
-      
-        searchInput.addEventListener("input", function () {
-          const query = this.value;
-      
-          // Close any already open lists
-          closeAllLists();
-      
-          if (!query) {
-            return false;
+      // Triggers file input when the file-upload-area is clicked
+      const fileUploadArea = document.querySelector(".file-upload-area");
+      if (fileUploadArea) {
+        fileUploadArea.addEventListener("click", function () {
+          document.querySelector(".file-input").click();
+        });
+      }
+
+      // Enables the "Upload Image" button only after a file has been selected
+      const fileInput = document.querySelector(".file-input");
+      if (fileInput) {
+        fileInput.addEventListener("change", function () {
+          const fileName = this.files[0]?.name || "";
+          if (fileName) {
+            document.querySelector(".file-status-message").textContent =
+              "File selected: " + fileName;
+            document.querySelector(".upload-button").disabled = false;
           }
-      
-          fetch(`/autocomplete?term=${encodeURIComponent(query)}`)
-            .then((response) => response.json())
-            .then((suggestions) => {
-              if (suggestions.length === 0) {
-                return false;
-              }
-      
-              suggestions.forEach((item) => {
-                const suggestionItem = document.createElement("li");
-                suggestionItem.innerHTML = `<strong>${item.substr(0, query.length)}</strong>${item.substr(query.length)}`;
-                suggestionItem.addEventListener("click", function () {
-                  searchInput.value = item;
-                  closeAllLists();
-                });
-                autocompleteList.appendChild(suggestionItem);
+        });
+      }
+
+      // AJAX for storing card
+      function storeCard() {
+        const formData = new FormData(document.getElementById("storeCardForm"));
+        
+        fetch("/store_card", {
+          method: "POST",
+          body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+          alert(data.message); // Show success or error message
+        })
+        .catch(error => console.error("Error storing card:", error));
+      }
+
+      // AJAX for removing card
+      function removeCard() {
+        const formData = new FormData(document.getElementById("storeCardForm"));
+
+        fetch("/remove_card", {
+          method: "POST",
+          body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+          alert(data.message); // Show success or error message
+          
+          if (data.success) {
+            document.querySelector(".card-info").style.display = "none"; // Hide card info on successful removal
+          }
+        })
+        .catch(error => console.error("Error removing card:", error));
+      }
+
+      // Autocomplete functionality
+      const searchInput = document.getElementById("card-search-input");
+      const autocompleteList = document.getElementById("autocomplete-list");
+      let currentFocus = -1;
+
+      searchInput.addEventListener("input", function () {
+        const query = this.value;
+        closeAllLists();
+        if (!query) return false;
+
+        fetch(`/autocomplete?term=${encodeURIComponent(query)}`)
+          .then((response) => response.json())
+          .then((suggestions) => {
+            if (suggestions.length === 0) return false;
+
+            suggestions.forEach((item) => {
+              const suggestionItem = document.createElement("li");
+              suggestionItem.innerHTML = `<strong>${item.substr(0, query.length)}</strong>${item.substr(query.length)}`;
+              suggestionItem.addEventListener("click", function () {
+                searchInput.value = item;
+                closeAllLists();
               });
-            })
-            .catch((error) => {
-              console.error("Error fetching autocomplete suggestions:", error);
+              autocompleteList.appendChild(suggestionItem);
             });
-        });
-      
-        searchInput.addEventListener("keydown", function (e) {
-          const items = autocompleteList.getElementsByTagName("li");
-          if (e.keyCode == 40) {
-            // Arrow DOWN
-            currentFocus++;
-            addActive(items);
-          } else if (e.keyCode == 38) {
-            // Arrow UP
-            currentFocus--;
-            addActive(items);
-          } else if (e.keyCode == 13) {
-            // ENTER
-            e.preventDefault();
-            if (currentFocus > -1) {
-              if (items) items[currentFocus].click();
-            }
-          }
-        });
-      
-        function addActive(items) {
-          if (!items) return false;
-          removeActive(items);
-          if (currentFocus >= items.length) currentFocus = 0;
-          if (currentFocus < 0) currentFocus = items.length - 1;
-          items[currentFocus].classList.add("autocomplete-active");
+          })
+          .catch((error) => {
+            console.error("Error fetching autocomplete suggestions:", error);
+          });
+      });
+
+      searchInput.addEventListener("keydown", function (e) {
+        const items = autocompleteList.getElementsByTagName("li");
+        if (e.keyCode == 40) {
+          currentFocus++;
+          addActive(items);
+        } else if (e.keyCode == 38) {
+          currentFocus--;
+          addActive(items);
+        } else if (e.keyCode == 13) {
+          e.preventDefault();
+          if (currentFocus > -1 && items) items[currentFocus].click();
         }
-      
-        function removeActive(items) {
-          for (let i = 0; i < items.length; i++) {
-            items[i].classList.remove("autocomplete-active");
-          }
+      });
+
+      function addActive(items) {
+        if (!items) return false;
+        removeActive(items);
+        if (currentFocus >= items.length) currentFocus = 0;
+        if (currentFocus < 0) currentFocus = items.length - 1;
+        items[currentFocus].classList.add("autocomplete-active");
+      }
+
+      function removeActive(items) {
+        for (let i = 0; i < items.length; i++) {
+          items[i].classList.remove("autocomplete-active");
         }
-      
-        function closeAllLists() {
-          while (autocompleteList.firstChild) {
-            autocompleteList.removeChild(autocompleteList.firstChild);
-          }
-          currentFocus = -1;
+      }
+
+      function closeAllLists() {
+        while (autocompleteList.firstChild) {
+          autocompleteList.removeChild(autocompleteList.firstChild);
         }
-      
-        document.addEventListener("click", function (e) {
-          if (e.target != searchInput && e.target.parentNode != autocompleteList) {
-            closeAllLists();
-          }
-        });
-      </script>      
+        currentFocus = -1;
+      }
+
+      document.addEventListener("click", function (e) {
+        if (e.target != searchInput && e.target.parentNode != autocompleteList) {
+          closeAllLists();
+        }
+      });
+    </script>
   </body>
 </html>
