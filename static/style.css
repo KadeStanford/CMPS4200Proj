@@ -160,6 +160,7 @@ body {
   color: #fff;
   cursor: not-allowed;
   border-radius: 15px;
+  border: none;
 }
 
 .upload-button:enabled {
@@ -182,6 +183,7 @@ body {
   color: #fff;
   cursor: pointer;
   border-radius: 15px;
+  border: none;
 }
 
 .upload-again-button:hover {
@@ -270,6 +272,7 @@ body {
   margin: 10px auto;
   text-align: center;
   width: fit-content;
+  border: none;
 }
 
 .remove-card-button:hover {
@@ -287,6 +290,7 @@ body {
   margin: 10px auto;
   text-align: center;
   width: fit-content;
+  border: none;
 }
 
 .store-card-button:hover {
@@ -307,6 +311,7 @@ body {
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000; 
+  border: none;
 }
 
 .upload-history-button:hover {
