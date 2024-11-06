@@ -11,11 +11,9 @@
     />
   </head>
   <body>
-    <!-- Navigation Bar -->
     <nav class="navbar">
       <div class="navbar-container">
         <a href="/" class="logo">Wu Kong's Card Scanner</a>
-        <!-- Card Search Form in Navbar -->
         <form
           action="{{ url_for('search_card') }}"
           method="POST"
@@ -30,7 +28,6 @@
             required
           />
           <button type="submit">Search</button>
-          <!-- Autocomplete Suggestions -->
           <ul id="autocomplete-list" class="autocomplete-items"></ul>
         </form>
       </div>
@@ -71,7 +68,6 @@
         </button>
       </form>
       {% else %}
-      <!-- Display 'Upload Again' button -->
       <div class="upload-again-container">
         <form action="/" method="GET">
           <button type="submit" class="upload-again-button">
@@ -178,8 +174,6 @@
           }
         });
       }
-
-      // AJAX for storing card
       function storeCard() {
         const formData = new FormData(document.getElementById("storeCardForm"));
         
@@ -189,29 +183,24 @@
         })
         .then(response => response.json())
         .then(data => {
-          alert(data.message); // Show success or error message
+          alert(data.message); 
         })
         .catch(error => console.error("Error storing card:", error));
       }
 
-      // AJAX for removing card
       function removeCard() {
-        const formData = new FormData(document.getElementById("storeCardForm"));
-
-        fetch("/remove_card", {
-          method: "POST",
-          body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-          alert(data.message); // Show success or error message
-          
-          if (data.success) {
-            document.querySelector(".card-info").style.display = "none"; // Hide card info on successful removal
-          }
-        })
-        .catch(error => console.error("Error removing card:", error));
-      }
+    const formData = new FormData(document.getElementById("storeCardForm"));
+    
+    fetch("/remove_card", {
+      method: "POST",
+      body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+      alert(data.message);
+    })
+    .catch(error => console.error("Error removing card:", error));
+  }
 
       // Autocomplete functionality
       const searchInput = document.getElementById("card-search-input");

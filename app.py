@@ -133,12 +133,27 @@ def store_card():
         if os.path.exists(temp_image_path):
             permanent_path = os.path.join(app.config['UPLOAD_FOLDER'], temp_image)
             shutil.move(temp_image_path, permanent_path)
-            return redirect(url_for('index', message="Card stored successfully!"))
+            return jsonify({"message": "Card stored successfully!", "success": True})
         else:
-            return redirect(url_for('index', message="Temporary image not found"))
+            return jsonify({"message": "Temporary image not found. Please reupload the card.", "success": False})
     except Exception as e:
         print(f"Error storing card: {str(e)}")
-        return redirect(url_for('index', message="Error storing card"))
+        return jsonify({"message": "Error storing card.", "success": False})
+
+@app.route('/remove_card', methods=['POST'])
+def remove_card():
+    try:
+        image_path = request.form.get('image_path')
+        permanent_image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_path)
+        
+        if os.path.exists(permanent_image_path):
+            os.remove(permanent_image_path)
+            return jsonify({"message": "Card removed successfully!", "success": True})
+        else:
+            return jsonify({"message": "Card not found in the uploads folder.", "success": False})
+    except Exception as e:
+        print(f"Error removing card: {str(e)}")
+        return jsonify({"message": "Error removing card.", "success": False})
 
 @app.route('/search', methods=['POST'])
 def search_card():
