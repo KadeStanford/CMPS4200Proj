@@ -1,47 +1,336 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Uploader</title>
-    <link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Wu Kong's Card Scanner</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <link
+      rel="icon"
+      href="{{ url_for('static', filename='favicon.ico') }}"
+      type="image/x-icon"
+    />
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="navbar-container">
+        <a href="/" class="logo">Wu Kong's Card Scanner</a>
+        <form
+          action="{{ url_for('search_card') }}"
+          method="POST"
+          class="search-form"
+        >
+          <input
+            type="text"
+            name="card_name"
+            id="card-search-input"
+            placeholder="Search for a card..."
+            autocomplete="off"
+            required
+          />
+          <button type="submit">Search</button>
+          <ul id="autocomplete-list" class="autocomplete-items"></ul>
+        </form>
+      </div>
+    </nav>
+
     <div class="wrapper">
-        <header>Image Uploader</header>
-        
-        <!-- Display the message if available (success or error) -->
-        {% if request.args.get('message') %}
-        <p>{{ request.args.get('message') }}</p>
+      {% if message %}
+      <p class="message">{{ message }}</p>
+      {% endif %} {% if not image_path %}
+      <form
+        action="/upload"
+        method="POST"
+        enctype="multipart/form-data"
+        class="upload-form"
+      >
+        <div class="file-upload-area">
+          <input
+            class="file-input"
+            type="file"
+            name="file"
+            accept=".png, .jpeg, .jpg, .svg"
+            hidden
+          />
+          <img src="/static/cloud.svg" alt="Upload Icon" class="upload-icon" />
+          <p>Browse Image to Upload</p>
+        </div>
+        <div class="file-status-message"></div>
+        <button type="submit" class="upload-button" disabled>
+          Upload Image
+        </button>
+        <button type="button" class="upload-history-button">
+          Upload History
+        </button>
+        <button type="button" class="remove-history-button">
+          Remove History
+        </button>
+      </form>
+      {% else %}
+      <div class="upload-again-container">
+        <form action="/" method="GET">
+          <button type="submit" class="upload-again-button">
+            Upload Again
+          </button>
+        </form>
+      </div>
+      {% endif %} {% if image_path and card_info %}
+      <div class="content-container">
+        <div class="card-image-container">
+          <img
+            src="{{ url_for('temp_uploaded_file', filename=image_path) }}"
+            alt="Uploaded Image"
+            class="card-image"
+          />
+        </div>
+
+        <div class="card-info">
+          <h2>{{ card_info.name }}</h2>
+          <p><strong>Type:</strong> {{ card_info.type_line }}</p>
+          <p><strong>Mana Cost:</strong> {{ card_info.mana_cost }}</p>
+          <p><strong>Description:</strong> {{ card_info.oracle_text }}</p>
+          {% if card_info.usd_price %}
+          <p><strong>Price (USD):</strong> ${{ card_info.usd_price }}</p>
+          {% endif %} {% if card_info.image_url %}
+          <div class="scryfall-image-container">
+            <img
+              src="{{ card_info.image_url }}"
+              alt="{{ card_info.name }}"
+              class="scryfall-image"
+            />
+          </div>
+          {% endif %}
+          <form id="storeCardForm">
+            <input type="hidden" name="image_path" value="{{ image_path }}" />
+            <button
+              type="button"
+              class="store-card-button"
+              onclick="storeCard()"
+            >
+              Store Card
+            </button>
+          </form>
+          <button
+            type="button"
+            class="remove-card-button"
+            onclick="removeCard()"
+          >
+            Remove Card
+          </button>
+        </div>
+      </div>
+      {% elif extracted_text %}
+      <div class="detected-info">
+        <h2>Extracted Text:</h2>
+        <p>{{ extracted_text }}</p>
+      </div>
+      {% endif %} {% if card_info_manual %}
+      <div class="content-container">
+        {% if card_info_manual.image_url %}
+        <div class="card-image-container">
+          <img
+            src="{{ card_info_manual.image_url }}"
+            alt="{{ card_info_manual.name }}"
+            class="card-image"
+          />
+        </div>
         {% endif %}
 
-        <!-- Form for file upload -->
-        <form action="/upload" method="POST" enctype="multipart/form-data">
-            <!-- Separates area for file input trigger -->
-            <div class="file-upload-area">
-                <input class="file-input" type="file" name="file" accept=".png, .jpeg, .jpg, .svg" hidden>
-                <img src="/static/cloud.svg" alt="Upload Icon" class="upload-icon">
-                <p>Browse Image to Upload</p>
-            </div>
-            <div class="file-status-message"></div>
-            <button type="submit" class="upload-button" disabled>Upload Image</button>
-        </form>
+        <div class="card-info">
+          <h2>{{ card_info_manual.name }}</h2>
+          <p><strong>Type:</strong> {{ card_info_manual.type_line }}</p>
+          <p><strong>Mana Cost:</strong> {{ card_info_manual.mana_cost }}</p>
+          <p>
+            <strong>Description:</strong> {{ card_info_manual.oracle_text }}
+          </p>
+          {% if card_info_manual.usd_price %}
+          <p><strong>Price (USD):</strong> ${{ card_info_manual.usd_price }}</p>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Modal for Upload History -->
+    <div id="uploadHistoryContainer" class="modal" style="display: none">
+      <div class="modal-content">
+        <span class="close" onclick="closeUploadHistory()">&times;</span>
+        <h2>Upload History</h2>
+        <div id="historyGrid" class="history-grid"></div>
+      </div>
     </div>
 
     <script>
-        //Triggers file input when the file-upload-area is clicked
-        document.querySelector('.file-upload-area').addEventListener('click', function() {
-            document.querySelector('.file-input').click();
+      const fileUploadArea = document.querySelector(".file-upload-area");
+      if (fileUploadArea) {
+        fileUploadArea.addEventListener("click", function () {
+          document.querySelector(".file-input").click();
+        });
+      }
+
+      const fileInput = document.querySelector(".file-input");
+      if (fileInput) {
+        fileInput.addEventListener("change", function () {
+          const fileName = this.files[0]?.name || "";
+          if (fileName) {
+            document.querySelector(".file-status-message").textContent =
+              "File selected: " + fileName;
+            document.querySelector(".upload-button").disabled = false;
+          }
+        });
+      }
+      function storeCard() {
+        const formData = new FormData(document.getElementById("storeCardForm"));
+
+        fetch("/store_card", {
+          method: "POST",
+          body: formData,
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            alert(data.message);
+          })
+          .catch((error) => console.error("Error storing card:", error));
+      }
+
+      function removeCard() {
+        const formData = new FormData(document.getElementById("storeCardForm"));
+
+        fetch("/remove_card", {
+          method: "POST",
+          body: formData,
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            alert(data.message);
+          })
+          .catch((error) => console.error("Error removing card:", error));
+      }
+
+      document
+        .querySelector(".upload-history-button")
+        .addEventListener("click", function () {
+          fetch("/upload_history")
+            .then((response) => response.json())
+            .then((files) => {
+              const historyGrid = document.getElementById("historyGrid");
+              historyGrid.innerHTML = "";
+
+              files.forEach((file) => {
+                const img = document.createElement("img");
+                img.src = `/uploads/${file}`;
+                img.alt = file;
+                historyGrid.appendChild(img);
+              });
+
+              document.getElementById("uploadHistoryContainer").style.display =
+                "block";
+            })
+            .catch((error) => {
+              console.error("Error fetching upload history:", error);
+            });
         });
 
-        //Enables the "Upload Image" button only after a file has been selected
-        document.querySelector('.file-input').addEventListener('change', function() {
-            const fileName = this.files[0]?.name || '';
-            if (fileName) {
-                document.querySelector('.file-status-message').textContent = 'File successfully selected: ' + fileName;
-                document.querySelector('.upload-button').disabled = false; //Enables the upload button
-            }
+      document
+        .querySelector(".remove-history-button")
+        .addEventListener("click", function () {
+          fetch("/clear_upload_history", {
+            method: "POST",
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              alert(data.message);
+              if (data.success) {
+                const historyGrid = document.getElementById("historyGrid");
+                if (historyGrid) {
+                  historyGrid.innerHTML = ""; 
+                }
+              }
+            })
+            .catch((error) => {
+              console.error("Error clearing upload history:", error);
+            });
         });
+
+      function closeUploadHistory() {
+        document.getElementById("uploadHistoryContainer").style.display =
+          "none";
+      }
+
+      const searchInput = document.getElementById("card-search-input");
+      const autocompleteList = document.getElementById("autocomplete-list");
+      let currentFocus = -1;
+
+      searchInput.addEventListener("input", function () {
+        const query = this.value;
+        closeAllLists();
+        if (!query) return false;
+
+        fetch(`/autocomplete?term=${encodeURIComponent(query)}`)
+          .then((response) => response.json())
+          .then((suggestions) => {
+            if (suggestions.length === 0) return false;
+
+            suggestions.forEach((item) => {
+              const suggestionItem = document.createElement("li");
+              suggestionItem.innerHTML = `<strong>${item.substr(
+                0,
+                query.length
+              )}</strong>${item.substr(query.length)}`;
+              suggestionItem.addEventListener("click", function () {
+                searchInput.value = item;
+                closeAllLists();
+              });
+              autocompleteList.appendChild(suggestionItem);
+            });
+          })
+          .catch((error) => {
+            console.error("Error fetching autocomplete suggestions:", error);
+          });
+      });
+
+      searchInput.addEventListener("keydown", function (e) {
+        const items = autocompleteList.getElementsByTagName("li");
+        if (e.keyCode == 40) {
+          currentFocus++;
+          addActive(items);
+        } else if (e.keyCode == 38) {
+          currentFocus--;
+          addActive(items);
+        } else if (e.keyCode == 13) {
+          e.preventDefault();
+          if (currentFocus > -1 && items) items[currentFocus].click();
+        }
+      });
+
+      function addActive(items) {
+        if (!items) return false;
+        removeActive(items);
+        if (currentFocus >= items.length) currentFocus = 0;
+        if (currentFocus < 0) currentFocus = items.length - 1;
+        items[currentFocus].classList.add("autocomplete-active");
+      }
+
+      function removeActive(items) {
+        for (let i = 0; i < items.length; i++) {
+          items[i].classList.remove("autocomplete-active");
+        }
+      }
+
+      function closeAllLists() {
+        while (autocompleteList.firstChild) {
+          autocompleteList.removeChild(autocompleteList.firstChild);
+        }
+        currentFocus = -1;
+      }
+
+      document.addEventListener("click", function (e) {
+        if (
+          e.target != searchInput &&
+          e.target.parentNode != autocompleteList
+        ) {
+          closeAllLists();
+        }
+      });
     </script>
-</body>
+  </body>
 </html>
