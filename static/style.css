@@ -85,7 +85,6 @@ body {
   background-color: #2e8b57;
 }
 
-/* Fix for Autocomplete Items */
 .autocomplete-items {
   position: absolute;
   z-index: 1000;
@@ -307,7 +306,23 @@ body {
   display: block;
   text-align: center;
   position: fixed;
-  bottom: 75px;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000; 
+  border: none;
+}
+
+.remove-history-button {
+  padding: 10px 20px;
+  background: linear-gradient(170deg, #e60e0e, #ff4343);
+  color: #ffffff;
+  cursor: pointer;
+  border-radius: 15px;
+  display: block;
+  text-align: center;
+  position: fixed;
+  bottom: 50px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000; 
@@ -316,6 +331,58 @@ body {
 
 .upload-history-button:hover {
   background-color: #2e8b57; 
+}
+
+/* CSS for modal */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content h2 {
+  color: white;
+  padding-bottom: 1%;
+}
+
+.modal-content {
+  background-color: #6f44ab;
+  margin: 15% auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%;
+  max-width: 600px;
+}
+
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.history-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 10px;
+}
+
+.history-grid img {
+  width: 100%;
+  height: auto;
 }
 
 /* Responsive Design */

@@ -155,6 +155,29 @@ def remove_card():
         print(f"Error removing card: {str(e)}")
         return jsonify({"message": "Error removing card.", "success": False})
 
+@app.route('/upload_history', methods=['GET'])
+def upload_history():
+    try:
+        uploaded_files = [f for f in os.listdir(app.config['UPLOAD_FOLDER']) if os.path.isfile(os.path.join(app.config['UPLOAD_FOLDER'], f)) and allowed_file(f)]
+        return jsonify(uploaded_files)
+    except Exception as e:
+        print(f"Error fetching upload history: {str(e)}")
+        return jsonify({"message": "Error fetching upload history", "success": False}), 500
+    
+
+@app.route('/clear_upload_history', methods=['POST'])
+def clear_upload_history():
+    try:
+        for filename in os.listdir(app.config['UPLOAD_FOLDER']):
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+        return jsonify({"message": "Upload history cleared successfully!", "success": True})
+    except Exception as e:
+        print(f"Error clearing upload history: {str(e)}")
+        return jsonify({"message": "Error clearing upload history.", "success": False})
+
+
 @app.route('/search', methods=['POST'])
 def search_card():
     try:

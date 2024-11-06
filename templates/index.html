@@ -34,14 +34,9 @@
     </nav>
 
     <div class="wrapper">
-      <!-- Display the message if available (success or error) -->
       {% if message %}
       <p class="message">{{ message }}</p>
-      {% endif %}
-
-      <!-- Conditional Display: Show upload form only if no image is uploaded -->
-      {% if not image_path %}
-      <!-- Form for file upload -->
+      {% endif %} {% if not image_path %}
       <form
         action="/upload"
         method="POST"
@@ -66,6 +61,9 @@
         <button type="button" class="upload-history-button">
           Upload History
         </button>
+        <button type="button" class="remove-history-button">
+          Remove History
+        </button>
       </form>
       {% else %}
       <div class="upload-again-container">
@@ -75,12 +73,8 @@
           </button>
         </form>
       </div>
-      {% endif %}
-
-      <!-- Display uploaded image and card information side by side -->
-      {% if image_path and card_info %}
+      {% endif %} {% if image_path and card_info %}
       <div class="content-container">
-        <!-- Uploaded Image -->
         <div class="card-image-container">
           <img
             src="{{ url_for('temp_uploaded_file', filename=image_path) }}"
@@ -89,7 +83,6 @@
           />
         </div>
 
-        <!-- Card Information -->
         <div class="card-info">
           <h2>{{ card_info.name }}</h2>
           <p><strong>Type:</strong> {{ card_info.type_line }}</p>
@@ -98,7 +91,6 @@
           {% if card_info.usd_price %}
           <p><strong>Price (USD):</strong> ${{ card_info.usd_price }}</p>
           {% endif %} {% if card_info.image_url %}
-          <!-- Scryfall Card Image -->
           <div class="scryfall-image-container">
             <img
               src="{{ card_info.image_url }}"
@@ -107,26 +99,32 @@
             />
           </div>
           {% endif %}
-          <!-- Store Card Form -->
           <form id="storeCardForm">
             <input type="hidden" name="image_path" value="{{ image_path }}" />
-            <button type="button" class="store-card-button" onclick="storeCard()">Store Card</button>
+            <button
+              type="button"
+              class="store-card-button"
+              onclick="storeCard()"
+            >
+              Store Card
+            </button>
           </form>
-          <button type="button" class="remove-card-button" onclick="removeCard()">Remove Card</button>
+          <button
+            type="button"
+            class="remove-card-button"
+            onclick="removeCard()"
+          >
+            Remove Card
+          </button>
         </div>
       </div>
       {% elif extracted_text %}
-      <!-- Display extracted text if card is not found -->
       <div class="detected-info">
         <h2>Extracted Text:</h2>
         <p>{{ extracted_text }}</p>
       </div>
-      {% endif %}
-
-      <!-- Display card search result from manual search -->
-      {% if card_info_manual %}
+      {% endif %} {% if card_info_manual %}
       <div class="content-container">
-        <!-- Card Image -->
         {% if card_info_manual.image_url %}
         <div class="card-image-container">
           <img
@@ -137,7 +135,6 @@
         </div>
         {% endif %}
 
-        <!-- Card Information -->
         <div class="card-info">
           <h2>{{ card_info_manual.name }}</h2>
           <p><strong>Type:</strong> {{ card_info_manual.type_line }}</p>
@@ -152,9 +149,17 @@
       </div>
       {% endif %}
     </div>
-    
+
+    <!-- Modal for Upload History -->
+    <div id="uploadHistoryContainer" class="modal" style="display: none">
+      <div class="modal-content">
+        <span class="close" onclick="closeUploadHistory()">&times;</span>
+        <h2>Upload History</h2>
+        <div id="historyGrid" class="history-grid"></div>
+      </div>
+    </div>
+
     <script>
-      // Triggers file input when the file-upload-area is clicked
       const fileUploadArea = document.querySelector(".file-upload-area");
       if (fileUploadArea) {
         fileUploadArea.addEventListener("click", function () {
@@ -162,7 +167,6 @@
         });
       }
 
-      // Enables the "Upload Image" button only after a file has been selected
       const fileInput = document.querySelector(".file-input");
       if (fileInput) {
         fileInput.addEventListener("change", function () {
@@ -176,33 +180,82 @@
       }
       function storeCard() {
         const formData = new FormData(document.getElementById("storeCardForm"));
-        
+
         fetch("/store_card", {
           method: "POST",
-          body: formData
+          body: formData,
         })
-        .then(response => response.json())
-        .then(data => {
-          alert(data.message); 
-        })
-        .catch(error => console.error("Error storing card:", error));
+          .then((response) => response.json())
+          .then((data) => {
+            alert(data.message);
+          })
+          .catch((error) => console.error("Error storing card:", error));
       }
 
       function removeCard() {
-    const formData = new FormData(document.getElementById("storeCardForm"));
-    
-    fetch("/remove_card", {
-      method: "POST",
-      body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-      alert(data.message);
-    })
-    .catch(error => console.error("Error removing card:", error));
-  }
+        const formData = new FormData(document.getElementById("storeCardForm"));
 
-      // Autocomplete functionality
+        fetch("/remove_card", {
+          method: "POST",
+          body: formData,
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            alert(data.message);
+          })
+          .catch((error) => console.error("Error removing card:", error));
+      }
+
+      document
+        .querySelector(".upload-history-button")
+        .addEventListener("click", function () {
+          fetch("/upload_history")
+            .then((response) => response.json())
+            .then((files) => {
+              const historyGrid = document.getElementById("historyGrid");
+              historyGrid.innerHTML = "";
+
+              files.forEach((file) => {
+                const img = document.createElement("img");
+                img.src = `/uploads/${file}`;
+                img.alt = file;
+                historyGrid.appendChild(img);
+              });
+
+              document.getElementById("uploadHistoryContainer").style.display =
+                "block";
+            })
+            .catch((error) => {
+              console.error("Error fetching upload history:", error);
+            });
+        });
+
+      document
+        .querySelector(".remove-history-button")
+        .addEventListener("click", function () {
+          fetch("/clear_upload_history", {
+            method: "POST",
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              alert(data.message);
+              if (data.success) {
+                const historyGrid = document.getElementById("historyGrid");
+                if (historyGrid) {
+                  historyGrid.innerHTML = ""; 
+                }
+              }
+            })
+            .catch((error) => {
+              console.error("Error clearing upload history:", error);
+            });
+        });
+
+      function closeUploadHistory() {
+        document.getElementById("uploadHistoryContainer").style.display =
+          "none";
+      }
+
       const searchInput = document.getElementById("card-search-input");
       const autocompleteList = document.getElementById("autocomplete-list");
       let currentFocus = -1;
@@ -219,7 +272,10 @@
 
             suggestions.forEach((item) => {
               const suggestionItem = document.createElement("li");
-              suggestionItem.innerHTML = `<strong>${item.substr(0, query.length)}</strong>${item.substr(query.length)}`;
+              suggestionItem.innerHTML = `<strong>${item.substr(
+                0,
+                query.length
+              )}</strong>${item.substr(query.length)}`;
               suggestionItem.addEventListener("click", function () {
                 searchInput.value = item;
                 closeAllLists();
@@ -268,7 +324,10 @@
       }
 
       document.addEventListener("click", function (e) {
-        if (e.target != searchInput && e.target.parentNode != autocompleteList) {
+        if (
+          e.target != searchInput &&
+          e.target.parentNode != autocompleteList
+        ) {
           closeAllLists();
         }
       });
