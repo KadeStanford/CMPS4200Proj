@@ -362,6 +362,10 @@ body {
   overflow-y: auto; 
 }
 
+.modal-content.single-image {
+  max-width: 550px !important;
+}
+
 .close {
   color: #aaa;
   float: right;
