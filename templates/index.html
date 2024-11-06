@@ -206,6 +206,32 @@
           .catch((error) => console.error("Error removing card:", error));
       }
 
+      document.addEventListener("DOMContentLoaded", () => {
+        const modal = document.getElementById("uploadHistoryContainer");
+        const modalContent = document.querySelector(".modal-content");
+        const historyButton = document.querySelector(".upload-history-button");
+
+        function adjustModalWidth() {
+          const images = modalContent.querySelectorAll("img");
+          if (images.length === 1) {
+            modalContent.classList.add("single-image");
+          } else {
+            modalContent.classList.remove("single-image");
+          }
+        }
+
+        historyButton.addEventListener("click", function () {
+          modal.style.display = "block";
+
+          setTimeout(adjustModalWidth, 100);
+        });
+
+        document.querySelector(".close").addEventListener("click", function () {
+          modal.style.display = "none";
+          modalContent.classList.remove("single-image");
+        });
+      });
+
       document
         .querySelector(".upload-history-button")
         .addEventListener("click", function () {
@@ -242,7 +268,7 @@
               if (data.success) {
                 const historyGrid = document.getElementById("historyGrid");
                 if (historyGrid) {
-                  historyGrid.innerHTML = ""; 
+                  historyGrid.innerHTML = "";
                 }
               }
             })
