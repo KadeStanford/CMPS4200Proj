@@ -135,7 +135,7 @@ def store_card():
             shutil.move(temp_image_path, permanent_path)
             return jsonify({"message": "Card stored successfully!", "success": True})
         else:
-            return jsonify({"message": "Temporary image not found. Please reupload the card.", "success": False})
+            return jsonify({"message": "Temporary image not found or stored already. Please reupload the card.", "success": False})
     except Exception as e:
         print(f"Error storing card: {str(e)}")
         return jsonify({"message": "Error storing card.", "success": False})
@@ -150,7 +150,7 @@ def remove_card():
             os.remove(permanent_image_path)
             return jsonify({"message": "Card removed successfully!", "success": True})
         else:
-            return jsonify({"message": "Card not found in the uploads folder.", "success": False})
+            return jsonify({"message": "Card not found in the uploads folder. Probably has been removed already or has not been stored.", "success": False})
     except Exception as e:
         print(f"Error removing card: {str(e)}")
         return jsonify({"message": "Error removing card.", "success": False})
