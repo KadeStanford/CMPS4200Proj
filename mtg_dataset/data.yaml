@@ -1,6 +1,6 @@
 # mtg_dataset/data.yaml
-train: E:/CMPS4200Proj/mtg_dataset/images/train
-val: E:/CMPS4200Proj/mtg_dataset/images/val
+train: E:\CMPS4200Proj\CMPS4200Proj\mtg_dataset\images\train
+val: E:\CMPS4200Proj\CMPS4200Proj\mtg_dataset\images\val
 
 nc: 2 # Number of classes
 names: ["card", "card_name"] # Class names

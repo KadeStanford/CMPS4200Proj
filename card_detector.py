@@ -8,14 +8,14 @@ from ultralytics import YOLO
 
 # Function to find the latest model
 def find_latest_model(runs_dir):
-    """Find the latest best.pt model in the runs directory."""
+    """Find the latest best.onnx model in the runs directory."""
     best_model_path = None
     latest_time = 0
 
-    # Traverse the directory tree to find all best.pt files
+    # Traverse the directory tree to find all best.onnx files
     for root, _, files in os.walk(runs_dir):
         for file in files:
-            if file == "best.pt":
+            if file == "best.onnx":
                 file_path = os.path.join(root, file)
                 # Get the last modified time
                 file_time = os.path.getmtime(file_path)
@@ -29,17 +29,17 @@ def find_latest_model(runs_dir):
 # Base directory where the project is located
 project_dir = os.path.dirname(os.path.abspath(__file__))
 
-# Find the latest best.pt model
+# Find the latest best.onnx model
 runs_dir = os.path.join(project_dir, "runs")  # Base directory where runs are stored
 yolo_model_path = find_latest_model(runs_dir)
 
 if yolo_model_path:
     print(f"Using latest model: {yolo_model_path}")
 else:
-    print("No best.pt model found. Exiting.")
+    print("No best.onnx model found. Exiting.")
     exit()
 
-# Load the YOLO model with the latest best.pt
+# Load the YOLO model with the latest best.onnx
 yolo_model = YOLO(yolo_model_path)  # Load the trained YOLO model
 
 # Load TrOCR model and processor

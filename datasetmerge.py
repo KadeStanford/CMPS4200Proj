@@ -3,12 +3,12 @@ import shutil
 import random
 
 # Define source and destination paths
-new_dataset_images_path = r"E:\CMPS4200Proj\new_dataset\images"
-new_dataset_labels_path = r"E:\CMPS4200Proj\new_dataset\labels"
-mtg_dataset_images_train = r"E:\CMPS4200Proj\mtg_dataset\images\train"
-mtg_dataset_images_val = r"E:\CMPS4200Proj\mtg_dataset\images\val"
-mtg_dataset_labels_train = r"E:\CMPS4200Proj\mtg_dataset\labels\train"
-mtg_dataset_labels_val = r"E:\CMPS4200Proj\mtg_dataset\labels\val"
+new_dataset_images_path = os.path.join("new_dataset", "images")
+new_dataset_labels_path = os.path.join( "new_dataset", "labels")
+mtg_dataset_images_train = os.path.join("mtg_dataset", "images", "train")
+mtg_dataset_images_val = os.path.join( "mtg_dataset", "images", "val")
+mtg_dataset_labels_train = os.path.join( "mtg_dataset", "labels", "train")
+mtg_dataset_labels_val = os.path.join( "mtg_dataset", "labels", "val")
 
 # Create destination directories if they don't exist
 os.makedirs(mtg_dataset_images_train, exist_ok=True)
