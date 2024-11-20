@@ -150,7 +150,6 @@
       {% endif %}
     </div>
 
-    <!-- Modal for Upload History -->
     <div id="uploadHistoryContainer" class="modal" style="display: none">
       <div class="modal-content">
         <span class="close" onclick="closeUploadHistory()">&times;</span>
@@ -179,32 +178,49 @@
         });
       }
       function storeCard() {
-        const formData = new FormData(document.getElementById("storeCardForm"));
+    const formData = new FormData(document.getElementById("storeCardForm"));
 
-        fetch("/store_card", {
-          method: "POST",
-          body: formData,
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            alert(data.message);
-          })
-          .catch((error) => console.error("Error storing card:", error));
+    fetch("/store_card", {
+      method: "POST",
+      body: formData,
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          alert(data.message);
+          document.querySelector(".store-card-button").style.display = "none";
+          document.querySelector(".remove-card-button").style.display = "block";
+        }
+      })
+      .catch((error) => console.error("Error storing card:", error));
+  }
+
+  function removeCard() {
+  const formData = new FormData(document.getElementById("storeCardForm"));
+
+  fetch("/remove_card", {
+    method: "POST",
+    body: formData,
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success) {
+        alert(data.message);
+        document.querySelector(".remove-card-button").style.display = "none";
+        document.querySelector(".store-card-button").style.display = "block";
+      } else {
+        alert("Failed to move card back to temp. Please try again.");
       }
+    })
+    .catch((error) => {
+      console.error("Error moving card back to temp:", error);
+      alert("Error occurred while moving card back to temp. Please try again.");
+    });
+}
 
-      function removeCard() {
-        const formData = new FormData(document.getElementById("storeCardForm"));
-
-        fetch("/remove_card", {
-          method: "POST",
-          body: formData,
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            alert(data.message);
-          })
-          .catch((error) => console.error("Error removing card:", error));
-      }
+  document.addEventListener("DOMContentLoaded", () => {
+    document.querySelector(".remove-card-button").style.display = "none";
+  });
 
       document.addEventListener("DOMContentLoaded", () => {
         const modal = document.getElementById("uploadHistoryContainer");
