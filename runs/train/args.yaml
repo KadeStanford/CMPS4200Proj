@@ -1,8 +1,8 @@
 task: detect
 mode: train
-model: E:/CMPS4200Proj/runs\train\weights\best.pt
-data: E:/CMPS4200Proj/mtg_dataset/data.yaml
-epochs: 200
+model: ./runs\train\weights\best.pt
+data: ./mtg_dataset/data.yaml
+epochs: 300
 time: null
 patience: 100
 batch: 16
@@ -11,8 +11,8 @@ save: true
 save_period: -1
 cache: false
 device: 0
-workers: 4
-project: E:/CMPS4200Proj/runs
+workers: 6
+project: ./runs
 name: train
 exist_ok: true
 pretrained: true
@@ -25,7 +25,7 @@ rect: false
 cos_lr: false
 close_mosaic: 10
 resume: false
-amp: true
+amp: false
 fraction: 1.0
 profile: false
 freeze: null
@@ -66,7 +66,7 @@ keras: false
 optimize: false
 int8: false
 dynamic: false
-simplify: false
+simplify: true
 opset: null
 workspace: 4
 nms: false
@@ -98,9 +98,10 @@ bgr: 0.0
 mosaic: 1.0
 mixup: 0.0
 copy_paste: 0.0
+copy_paste_mode: flip
 auto_augment: randaugment
 erasing: 0.4
 crop_fraction: 1.0
 cfg: null
 tracker: botsort.yaml
-save_dir: E:\CMPS4200Proj\runs\train
+save_dir: runs\train

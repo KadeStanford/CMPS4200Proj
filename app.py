@@ -77,10 +77,8 @@ def temp_uploaded_file(filename):
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     try:
-        # Check if the file exists in the permanent uploads folder
         if os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], filename)):
             return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-        # Fall back to temp_uploads if not in uploads
         return send_from_directory(app.config['TEMP_FOLDER'], filename)
     except Exception as e:
         print(f"Error sending file {filename}: {str(e)}")
@@ -145,15 +143,16 @@ def remove_card():
     try:
         image_path = request.form.get('image_path')
         permanent_image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_path)
-        
+        temp_image_path = os.path.join(app.config['TEMP_FOLDER'], image_path)
+
         if os.path.exists(permanent_image_path):
-            os.remove(permanent_image_path)
+            shutil.move(permanent_image_path, temp_image_path)
             return jsonify({"message": "Card removed successfully!", "success": True})
         else:
-            return jsonify({"message": "Card not found in the uploads folder. Probably has been removed already or has not been stored.", "success": False})
+            return jsonify({"message": "Card not found in the uploads. Probably has been removed already or has not been stored.", "success": False})
     except Exception as e:
-        print(f"Error removing card: {str(e)}")
-        return jsonify({"message": "Error removing card.", "success": False})
+        print(f"Error moving card back to temp: {str(e)}")
+        return jsonify({"message": "Error removing card!", "success": False})
 
 @app.route('/upload_history', methods=['GET'])
 def upload_history():
